@@ -564,6 +564,7 @@ func NewEthermintApp(
 		feemarket.NewAppModule(app.FeeMarketKeeper, feeMarketSs),
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, evmSs),
 	)
+	// app.BaseApp.SetMigrationModuleManager(app.mm) // TODO(dudong2): uncomment when bump up cosmos-sdk v0.50.x
 
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
