@@ -564,7 +564,10 @@ func NewEthermintApp(
 		feemarket.NewAppModule(app.FeeMarketKeeper, feeMarketSs),
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, evmSs),
 	)
-	// app.BaseApp.SetMigrationModuleManager(app.mm) // TODO(dudong2): uncomment when bump up cosmos-sdk v0.50.x
+
+	// app.mm.SetOrderPreBlockers( // TODO(dudong2): uncomment when bump up cosmos-sdk v0.50.x
+	// 	upgradetypes.ModuleName,
+	// )
 
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
@@ -699,6 +702,7 @@ func NewEthermintApp(
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
+	// app.SetPreBlocker(app.PreBlocker) // TODO(dudong2): uncomment when bump up cosmos-sdk v0.50.x
 	app.SetEndBlocker(app.EndBlocker)
 	app.setAnteHandler(encodingConfig.TxConfig, cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted)))
 	// In v0.46, the SDK introduces _postHandlers_. PostHandlers are like
@@ -767,6 +771,11 @@ func (app *EthermintApp) setPostHandler() {
 
 // Name returns the name of the App
 func (app *EthermintApp) Name() string { return app.BaseApp.Name() }
+
+// PreBlocker updates every pre begin block
+// func (app *EthermintApp) PreBlocker(ctx sdk.Context, req abci.RequestBeginBlock) (sdk.ResponsePreBlock, error) { // TODO(dudong2): uncomment when bump up cosmos-sdk v0.50.x
+// 	return app.mm.PreBlock(ctx, req)
+// }
 
 // BeginBlocker updates every begin block
 func (app *EthermintApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
