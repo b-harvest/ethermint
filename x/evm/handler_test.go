@@ -179,7 +179,7 @@ func (suite *EvmTestSuite) SetupTest() {
 }
 
 func (suite *EvmTestSuite) SignTx(tx *types.MsgEthereumTx) {
-	tx.From = suite.from.String()
+	tx.From = suite.from.Bytes()
 	err := tx.Sign(suite.ethSigner, suite.signer)
 	suite.Require().NoError(err)
 }
@@ -608,7 +608,7 @@ func (suite *EvmTestSuite) TestERC20TransferReverted() {
 			suite.Require().NoError(err)
 			fees, err := keeper.VerifyFee(txData, "aphoton", baseFee, true, true, suite.ctx.IsCheckTx())
 			suite.Require().NoError(err)
-			err = k.DeductTxCostsFromUserBalance(suite.ctx, fees, common.HexToAddress(tx.From))
+			err = k.DeductTxCostsFromUserBalance(suite.ctx, fees, tx.GetSender())
 			suite.Require().NoError(err)
 
 			res, err := k.EthereumTx(suite.ctx, tx)

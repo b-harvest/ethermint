@@ -227,6 +227,8 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 	_, testAddresses, err := generatePrivKeyAddressPairs(10)
 	suite.Require().NoError(err)
 
+	fromAddr := []byte{0, 0}
+
 	testcases := []struct {
 		name         string
 		msgs         []sdk.Msg
@@ -238,7 +240,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 			msgs: []sdk.Msg{
 				newGenericMsgGrant(
 					testAddresses,
-					sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
+					sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{From: fromAddr}),
 				),
 			},
 			expectedCode: sdkerrors.ErrUnauthorized.ABCICode(),
@@ -258,7 +260,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 			msgs: []sdk.Msg{
 				newGenericMsgGrant(
 					testAddresses,
-					sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
+					sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{From: fromAddr}),
 				),
 			},
 			expectedCode: sdkerrors.ErrUnauthorized.ABCICode(),
@@ -271,7 +273,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 					testAddresses[1],
 					[]sdk.Msg{
 						createMsgSend(testAddresses),
-						&evmtypes.MsgEthereumTx{},
+						&evmtypes.MsgEthereumTx{From: fromAddr},
 					},
 				),
 			},
@@ -284,7 +286,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 					testAddresses[1],
 					2,
 					[]sdk.Msg{
-						&evmtypes.MsgEthereumTx{},
+						&evmtypes.MsgEthereumTx{From: fromAddr},
 					},
 				),
 			},

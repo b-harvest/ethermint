@@ -198,7 +198,7 @@ func (s *AnteTestSuite) BuildTestEthTx(
 		input,
 		accesses,
 	)
-	msgEthereumTx.From = from.String()
+	msgEthereumTx.From = from.Bytes()
 	return msgEthereumTx
 }
 
@@ -233,7 +233,6 @@ func (suite *AnteTestSuite) CreateTestTxBuilder(
 	err = msg.Sign(suite.ethSigner, tests.NewSigner(priv))
 	suite.Require().NoError(err)
 
-	msg.From = ""
 	err = builder.SetMsgs(msg)
 	suite.Require().NoError(err)
 

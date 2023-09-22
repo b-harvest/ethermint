@@ -669,8 +669,7 @@ func (suite *KeeperTestSuite) createContractGethMsg(nonce uint64, signer ethtype
 		return nil, err
 	}
 
-	msgSigner := ethtypes.MakeSigner(cfg, big.NewInt(suite.ctx.BlockHeight()))
-	return ethMsg.AsMessage(msgSigner, nil)
+	return ethMsg.AsMessage(nil)
 }
 
 func (suite *KeeperTestSuite) createContractMsgTx(nonce uint64, signer ethtypes.Signer, cfg *params.ChainConfig, gasPrice *big.Int) (*types.MsgEthereumTx, error) {
@@ -684,7 +683,7 @@ func (suite *KeeperTestSuite) createContractMsgTx(nonce uint64, signer ethtypes.
 	ethTx := ethtypes.NewTx(contractCreateTx)
 	ethMsg := &types.MsgEthereumTx{}
 	ethMsg.FromEthereumTx(ethTx)
-	ethMsg.From = suite.address.Hex()
+	ethMsg.From = suite.address.Bytes()
 
 	return ethMsg, ethMsg.Sign(signer, suite.signer)
 }
