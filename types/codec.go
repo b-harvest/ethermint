@@ -17,7 +17,7 @@ package types
 
 import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
+	// "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
@@ -33,7 +33,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&EthAccount{},
 	)
 	registry.RegisterImplementations(
-		(*tx.TxExtensionOptionI)(nil),
+		// (*tx.TxExtensionOptionI)(nil),
 		&ExtensionOptionsWeb3Tx{},
 		&ExtensionOptionDynamicFeeTx{},
 	)

@@ -70,6 +70,7 @@ import (
 	ethermint "github.com/evmos/ethermint/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/evmos/ethermint/app"
 )
 
@@ -84,9 +85,15 @@ type AppConstructor = func(val Validator) servertypes.Application
 func NewAppConstructor(encodingCfg params.EncodingConfig) AppConstructor {
 	return func(val Validator) servertypes.Application {
 		return app.NewEthermintApp(
-			val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
+			val.Ctx.Logger,
+			dbm.NewMemDB(),
+			nil,
+			true,
+			make(map[int64]bool),
+			val.Ctx.Config.RootDir,
+			0,
 			encodingCfg,
-			simapp.EmptyAppOptions{},
+			simtestutil.NewAppOptionsWithFlagHome(val.Ctx.Config.RootDir),
 			baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 			baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 		)
