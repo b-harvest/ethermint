@@ -22,8 +22,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	// "github.com/cosmos/cosmos-sdk/types/tx"
-	proto "github.com/gogo/protobuf/proto"
+	"github.com/cosmos/cosmos-sdk/types/tx"
+	proto "github.com/cosmos/gogoproto/proto"
 )
 
 var (
@@ -50,7 +50,7 @@ func init() {
 // RegisterInterfaces registers the client interfaces to protobuf Any.
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
-		// (*tx.TxExtensionOptionI)(nil),
+		(*tx.ExtensionOptionI)(nil),
 		&ExtensionOptionsEthereumTx{},
 	)
 	registry.RegisterImplementations(
