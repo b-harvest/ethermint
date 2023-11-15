@@ -23,6 +23,10 @@ import (
 	"os"
 	"path/filepath"
 
+	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
+
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -33,19 +37,21 @@ import (
 	tmos "github.com/cometbft/cometbft/libs/os"
 
 	"cosmossdk.io/simapp"
-	simappparams "cosmossdk.io/simapp/params"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+
 	"github.com/cosmos/cosmos-sdk/store/streaming"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	mempool "github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -115,6 +121,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/evmos/ethermint/client/docs/statik"
@@ -134,6 +141,7 @@ import (
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 
+	simappparams "cosmossdk.io/simapp/params"
 	// Force-load the tracer engines to trigger registration due to Go-Ethereum v1.10.15 changes
 	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
@@ -159,7 +167,7 @@ var (
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
 		auth.AppModuleBasic{},
-		genutil.AppModuleBasic{},
+		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
 		staking.AppModuleBasic{},
@@ -173,6 +181,7 @@ var (
 		crisis.AppModuleBasic{},
 		slashing.AppModuleBasic{},
 		ibc.AppModuleBasic{},
+		ibctm.AppModuleBasic{},
 		authzmodule.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
@@ -199,6 +208,11 @@ var (
 
 	// module accounts that are allowed to receive tokens
 	allowedReceivingModAcc = map[string]bool{}
+)
+
+var (
+	_ runtime.AppI            = (*EthermintApp)(nil)
+	_ servertypes.Application = (*EthermintApp)(nil)
 )
 
 // var _ server.Application (*EthermintApp)(nil)
@@ -253,6 +267,14 @@ type EthermintApp struct {
 
 	// the configurator
 	configurator module.Configurator
+
+	// simulation manager
+	sm *module.SimulationManager
+}
+
+// SimulationManager implements runtime.AppI
+func (*EthermintApp) SimulationManager() *module.SimulationManager {
+	panic("unimplemented")
 }
 
 // NewEthermintApp returns a reference to a new initialized Ethermint application.
@@ -275,6 +297,14 @@ func NewEthermintApp(
 	eip712.SetEncodingConfig(encodingConfig)
 
 	// NOTE we use custom transaction decoder that supports the sdk.Tx interface instead of sdk.StdTx
+	// Setup Mempool and Proposal Handlers
+	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
+		mempool := mempool.NoOpMempool{}
+		app.SetMempool(mempool)
+		handler := baseapp.NewDefaultProposalHandler(mempool, app)
+		app.SetPrepareProposal(handler.PrepareProposalHandler())
+		app.SetProcessProposal(handler.ProcessProposalHandler())
+	})
 	bApp := baseapp.NewBaseApp(
 		appName,
 		logger,
@@ -459,6 +489,9 @@ func NewEthermintApp(
 		app.StakingKeeper, app.MsgServiceRouter(), govConfig, authAddr,
 	)
 
+	// Set legacy router for backwards compatibility with gov v1beta1
+	govKeeper.SetLegacyRouter(govRouter)
+
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
 		// register the governance hooks
@@ -633,10 +666,29 @@ func NewEthermintApp(
 
 	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
 	// Make sure it's called after `app.mm` and `app.configurator` are set.
-	app.RegisterUpgradeHandlers()
+	app.RegisterUpgradeHandlers(app.appCodec, app.IBCKeeper.ClientKeeper)
 
 	// add test gRPC service for testing gRPC queries in isolation
 	// testdata.RegisterTestServiceServer(app.GRPCQueryRouter(), testdata.TestServiceImpl{})
+
+	// create the simulation manager and define the order of the modules for deterministic simulations
+	//
+	// NOTE: this is not required apps that don't use the simulator for fuzz testing
+	// transactions
+	overrideModules := map[string]module.AppModuleSimulation{
+		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
+	}
+	app.sm = module.NewSimulationManagerFromAppModules(app.mm.Modules, overrideModules)
+
+	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
+
+	reflectionSvc, err := runtimeservices.NewReflectionService()
+	if err != nil {
+		panic(err)
+	}
+	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
+
+	app.sm.RegisterStoreDecoders()
 
 	// initialize stores
 	app.MountKVStores(keys)
@@ -846,8 +898,6 @@ func (app *EthermintApp) RegisterTendermintService(clientCtx client.Context) {
 	)
 }
 
-// RegisterNodeService registers the node gRPC service on the provided
-// application gRPC query router.
 func (app *EthermintApp) RegisterNodeService(clientCtx client.Context) {
 	node.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
 }

@@ -255,7 +255,7 @@ endif
 
 ifeq (, $(shell which protoc-gen-go))
 	@echo "Installing protoc-gen-go..."
-	@go get github.com/fjl/gencodec github.com/golang/protobuf/protoc-gen-go
+	@go get github.com/fjl/gencodec google.golang.org/protobuf/cmd/protoc-gen-go
 else
 	@echo "protoc-gen-go already installed; skipping..."
 endif
