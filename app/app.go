@@ -772,8 +772,9 @@ func (app *EthermintApp) setPostHandler() {
 // Name returns the name of the App
 func (app *EthermintApp) Name() string { return app.BaseApp.Name() }
 
+// TODO(dudong2): uncomment when bump up cosmos-sdk v0.50.x
 // PreBlocker updates every pre begin block
-// func (app *EthermintApp) PreBlocker(ctx sdk.Context, req abci.RequestBeginBlock) (sdk.ResponsePreBlock, error) { // TODO(dudong2): uncomment when bump up cosmos-sdk v0.50.x
+// func (app *EthermintApp) PreBlocker(ctx sdk.Context, req abci.RequestBeginBlock) (sdk.ResponsePreBlock, error) {
 // 	return app.mm.PreBlock(ctx, req)
 // }
 
