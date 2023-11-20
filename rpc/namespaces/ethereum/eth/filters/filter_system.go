@@ -23,8 +23,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"cosmossdk.io/log"
 	tmjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/libs/log"
 	tmquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
@@ -42,14 +42,23 @@ import (
 )
 
 var (
-	txEvents  = tmtypes.QueryForEvent(tmtypes.EventTx).String()
-	evmEvents = tmquery.MustParse(fmt.Sprintf("%s='%s' AND %s.%s='%s'",
+	txEvents     = tmtypes.QueryForEvent(tmtypes.EventTx).String()
+	headerEvents = tmtypes.QueryForEvent(tmtypes.EventNewBlockHeader).String()
+	evmEvents    string
+)
+
+func init() {
+	s := fmt.Sprintf("%s='%s' AND %s.%s='%s'",
 		tmtypes.EventTypeKey,
 		tmtypes.EventTx,
 		sdk.EventTypeMessage,
-		sdk.AttributeKeyModule, evmtypes.ModuleName)).String()
-	headerEvents = tmtypes.QueryForEvent(tmtypes.EventNewBlockHeader).String()
-)
+		sdk.AttributeKeyModule, evmtypes.ModuleName)
+	q, err := tmquery.New(s)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse %s: %v", s, err))
+	}
+	evmEvents = q.String()
+}
 
 // EventSystem creates subscriptions, processes events and broadcasts them to the
 // subscription which match the subscription criteria using the Tendermint's RPC client.

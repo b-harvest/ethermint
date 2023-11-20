@@ -110,8 +110,7 @@ func (b *Backend) GetProof(address common.Address, storageKeys []string, blockNr
 	}
 
 	// query account proofs
-	accountKey := authtypes.AddressStoreKey(sdk.AccAddress(address.Bytes()))
-	_, proof, err := b.queryClient.GetProof(clientCtx, authtypes.StoreKey, accountKey)
+	_, proof, err := b.queryClient.GetProof(clientCtx, authtypes.StoreKey, address.Bytes())
 	if err != nil {
 		return nil, err
 	}

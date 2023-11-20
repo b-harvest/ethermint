@@ -16,6 +16,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
@@ -26,6 +27,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	consensusparamskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -37,13 +39,13 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
-	// "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 )
 
-func (app *EthermintApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, clientKeeper clientkeeper.Keeper) {
+func (app *EthermintApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, clientKeeper clientkeeper.Keeper, consensusParamsKeeper consensusparamskeeper.Keeper) {
 	planName := "integration-test-upgrade"
 	// Set param key table for params module migration
 	for _, subspace := range app.ParamsKeeper.GetSubspaces() {
@@ -80,19 +82,20 @@ func (app *EthermintApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, clientKe
 	}
 
 	baseAppLegacySS := app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
-	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) { // TODO(dudong2)
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		// OPTIONAL: prune expired tendermint consensus states to save storage space
-		if _, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, cdc, clientKeeper); err != nil {
+		if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, clientKeeper); err != nil {
 			return nil, err
 		}
 		// explicitly update the IBC 02-client params, adding the localhost client type
-		params := clientKeeper.GetParams(ctx)
-		// params.AllowedClients = append(params.AllowedClients, exported.Localhost) // TODO(dudong2): uncomment when bump up ibc-go >= v7.1.0
-		clientKeeper.SetParams(ctx, params)
+		params := clientKeeper.GetParams(sdkCtx)
+		params.AllowedClients = append(params.AllowedClients, exported.Localhost)
+		clientKeeper.SetParams(sdkCtx, params)
 		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
-		baseapp.MigrateParams(ctx, baseAppLegacySS, &app.ConsensusParamsKeeper)
-		c := app.GetConsensusParams(ctx)
-		ctx = ctx.WithConsensusParams(c)
+		baseapp.MigrateParams(sdkCtx, baseAppLegacySS, consensusParamsKeeper.ParamsStore)
+		c := app.GetConsensusParams(sdkCtx)
+		sdkCtx = sdkCtx.WithConsensusParams(c)
 		return app.mm.RunMigrations(ctx, app.configurator, fromVM)
 	})
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()

@@ -20,7 +20,10 @@ func Commit(ctx sdk.Context, app *app.EthermintApp, t time.Duration, vs *tmtypes
 	header := ctx.BlockHeader()
 
 	if vs != nil {
-		res := app.EndBlock(abci.RequestEndBlock{Height: header.Height})
+		res, err := app.EndBlocker(ctx.WithBlockHeight(header.Height))
+		if err != nil {
+			return ctx, err
+		}
 
 		nextVals, err := applyValSetChanges(vs, res.ValidatorUpdates)
 		if err != nil {
@@ -29,18 +32,19 @@ func Commit(ctx sdk.Context, app *app.EthermintApp, t time.Duration, vs *tmtypes
 		header.ValidatorsHash = vs.Hash()
 		header.NextValidatorsHash = nextVals.Hash()
 	} else {
-		app.EndBlocker(ctx, abci.RequestEndBlock{Height: header.Height})
+		app.EndBlocker(ctx.WithBlockHeight(header.Height))
 	}
 
-	_ = app.Commit()
+	_, err := app.Commit()
+	if err != nil {
+		return ctx, err
+	}
 
 	header.Height++
 	header.Time = header.Time.Add(t)
 	header.AppHash = app.LastCommitID().Hash
 
-	app.BeginBlock(abci.RequestBeginBlock{
-		Header: header,
-	})
+	app.BeginBlocker(ctx.WithBlockHeader(header))
 
 	return ctx.WithBlockHeader(header), nil
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/types"
@@ -115,7 +116,7 @@ func (eis *EVMIndexerService) OnStart() error {
 				eis.Logger.Error("failed to fetch block result", "height", i, "err", err)
 				break
 			}
-			if err := eis.txIdxr.IndexBlock(block.Block, blockResult.TxsResults); err != nil {
+			if err := eis.txIdxr.IndexBlock(block.Block, &abci.ResponseFinalizeBlock{TxResults: blockResult.TxsResults}); err != nil {
 				eis.Logger.Error("failed to index block", "height", i, "err", err)
 			}
 			lastBlock = blockResult.Height
