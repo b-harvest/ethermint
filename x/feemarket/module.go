@@ -181,6 +181,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // RegisterStoreDecoder registers a decoder for fee market module's types
 func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
+	// sdr[teyps.StoreKey] = simtypes.NewStoreDecoderFuncFromCollectionsSchema(schema collections.Schema)
 	// TODO(dudong2)
 }
 

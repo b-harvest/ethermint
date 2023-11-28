@@ -12,12 +12,11 @@ import (
 // and managed by the Cosmos SDK params module and stores them directly into the x/evm module state.
 func MigrateStore(
 	ctx sdk.Context,
-	storeKey storetypes.StoreKey,
+	store storetypes.KVStore,
 	legacySubspace types.Subspace,
 	cdc codec.BinaryCodec,
 ) error {
 	var (
-		store  = ctx.KVStore(storeKey)
 		params types.Params
 	)
 

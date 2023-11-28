@@ -36,7 +36,7 @@ func TestMigrate(t *testing.T) {
 	kvStore.Set(types.ParamStoreKeyExtraEIPs, extraEIPsBz)
 	kvStore.Set(types.ParamStoreKeyChainConfig, chainConfigBz)
 
-	err := v5.MigrateStore(ctx, storeKey, cdc)
+	err := v5.MigrateStore(ctx, kvStore, cdc)
 	require.NoError(t, err)
 
 	paramsBz := kvStore.Get(types.KeyPrefixParams)

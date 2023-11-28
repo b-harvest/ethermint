@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -117,8 +118,9 @@ func (suite *KeeperTestSuite) SetupApp(checkTx bool) {
 	types.RegisterQueryServer(queryHelper, suite.app.FeeMarketKeeper)
 	suite.queryClient = types.NewQueryClient(queryHelper)
 
+	accNum := suite.app.AccountKeeper.NextAccountNumber(suite.ctx)
 	acc := &ethermint.EthAccount{
-		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.address.Bytes()), nil, 0, 0),
+		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.address.Bytes()), nil, accNum, 0),
 		CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 	}
 
@@ -128,7 +130,9 @@ func (suite *KeeperTestSuite) SetupApp(checkTx bool) {
 	validator, err := stakingtypes.NewValidator(valAddr.String(), priv.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
-	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, []byte(validator.GetOperator()))
+	bz, err := suite.app.StakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+	require.NoError(t, err)
+	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, bz)
 	require.NoError(t, err)
 
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
@@ -150,13 +154,21 @@ func (suite *KeeperTestSuite) Commit() {
 // Commit commits a block at a given time.
 func (suite *KeeperTestSuite) CommitAfter(t time.Duration) {
 	header := suite.ctx.BlockHeader()
-	suite.app.EndBlocker(suite.ctx.WithBlockHeight(header.Height))
-	_, err := suite.app.Commit()
+	_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: header.Height,
+	})
+	suite.Require().NoError(err)
+
+	_, err = suite.app.Commit()
 	suite.Require().NoError(err)
 
 	header.Height += 1
 	header.Time = header.Time.Add(t)
-	suite.app.BeginBlocker(suite.ctx.WithBlockHeader(header))
+	_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: header.Height,
+		Time:   header.Time,
+	})
+	suite.Require().NoError(err)
 
 	// update ctx
 	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
@@ -183,8 +195,9 @@ func (suite *KeeperTestSuite) TestSetGetBlockGasWanted() {
 	for _, tc := range testCases {
 		tc.malleate()
 
-		gas := suite.app.FeeMarketKeeper.GetBlockGasWanted(suite.ctx)
+		gas, err := suite.app.FeeMarketKeeper.GetBlockGasWanted(suite.ctx)
 		suite.Require().Equal(tc.expGas, gas, tc.name)
+		suite.Require().NoError(err)
 	}
 }
 

@@ -18,6 +18,7 @@ package keeper
 import (
 	"math/big"
 
+	"cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
@@ -47,7 +48,7 @@ type Keeper struct {
 	// - storing account's Code
 	// - storing transaction Logs
 	// - storing Bloom filters by block height. Needed for the Web3 API.
-	storeKey storetypes.StoreKey
+	storeService store.KVStoreService
 
 	// key to access the transient store, which is reset on every block during Commit
 	transientKey storetypes.StoreKey
@@ -84,7 +85,8 @@ type Keeper struct {
 // NewKeeper generates new evm module keeper
 func NewKeeper(
 	cdc codec.BinaryCodec,
-	storeKey, transientKey storetypes.StoreKey,
+	storeService store.KVStoreService,
+	transientKey storetypes.StoreKey,
 	authority sdk.AccAddress,
 	ak types.AccountKeeper,
 	bankKeeper types.BankKeeper,
@@ -113,7 +115,7 @@ func NewKeeper(
 		bankKeeper:        bankKeeper,
 		stakingKeeper:     sk,
 		feeMarketKeeper:   fmk,
-		storeKey:          storeKey,
+		storeService:      storeService,
 		transientKey:      transientKey,
 		customPrecompiles: customPrecompiles,
 		evmConstructor:    evmConstructor,

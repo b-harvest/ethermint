@@ -49,7 +49,7 @@ func BenchmarkEthermintApp_ExportAppStateAndValidators(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Making a new app object with the db, so that initchain hasn't been called
 		app2 := NewEthermintApp(
-			log.NewLogger(io.Discard), // TODO(dudong2)
+			log.NewLogger(io.Discard),
 			db,
 			nil,
 			true,

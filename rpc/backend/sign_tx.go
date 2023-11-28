@@ -131,7 +131,7 @@ func (b *Backend) Sign(address common.Address, data hexutil.Bytes) (hexutil.Byte
 	}
 
 	// Sign the requested hash with the wallet
-	signature, _, err := b.clientCtx.Keyring.SignByAddress(from, data, signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON) // TODO(dudong2)
+	signature, _, err := b.clientCtx.Keyring.SignByAddress(from, data, signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	if err != nil {
 		b.logger.Error("keyring.SignByAddress failed", "address", address.Hex())
 		return nil, err
@@ -157,7 +157,7 @@ func (b *Backend) SignTypedData(address common.Address, typedData apitypes.Typed
 	}
 
 	// Sign the requested hash with the wallet
-	signature, _, err := b.clientCtx.Keyring.SignByAddress(from, sigHash, signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON) // TODO(dudong2)
+	signature, _, err := b.clientCtx.Keyring.SignByAddress(from, sigHash, signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 
 	if err != nil {
 		b.logger.Error("keyring.SignByAddress failed", "address", address.Hex())

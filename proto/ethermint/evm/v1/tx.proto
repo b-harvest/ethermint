@@ -8,6 +8,8 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/any.proto";
 
+import "amino/amino.proto";
+
 option go_package = "github.com/evmos/ethermint/x/evm/types";
 
 // Msg defines the evm Msg service.
@@ -23,6 +25,8 @@ service Msg {
 
 // MsgEthereumTx encapsulates an Ethereum transaction as an SDK message.
 message MsgEthereumTx {
+  option (amino.name) = "ethermint/MsgEthereumTx";
+
   option (gogoproto.goproto_getters) = false;
 
   // data is inner transaction data of the Ethereum transaction

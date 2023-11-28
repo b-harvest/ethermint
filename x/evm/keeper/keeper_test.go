@@ -206,8 +206,9 @@ func (suite *KeeperTestSuite) SetupAppWithT(checkTx bool, t require.TestingT) {
 	types.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
 	suite.queryClient = types.NewQueryClient(queryHelper)
 
+	accNum := suite.app.AccountKeeper.NextAccountNumber(suite.ctx)
 	acc := &ethermint.EthAccount{
-		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.address.Bytes()), nil, 0, 0),
+		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.address.Bytes()), nil, accNum, 0),
 		CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 	}
 
@@ -230,18 +231,18 @@ func (suite *KeeperTestSuite) SetupAppWithT(checkTx bool, t require.TestingT) {
 }
 
 func (suite *KeeperTestSuite) EvmDenom() string {
-	ctx := sdk.WrapSDKContext(suite.ctx)
-	rsp, _ := suite.queryClient.Params(ctx, &types.QueryParamsRequest{})
+	rsp, _ := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
 	return rsp.Params.EvmDenom
 }
 
-// Commit and begin new block
 func (suite *KeeperTestSuite) Commit() {
 	_, err := suite.app.Commit()
 	suite.Require().NoError(err)
 	header := suite.ctx.BlockHeader()
 	header.Height += 1
-	suite.app.BeginBlocker(suite.ctx.WithBlockHeader(header))
+	suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: header.Height,
+	})
 
 	// update ctx
 	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
@@ -257,7 +258,6 @@ func (suite *KeeperTestSuite) StateDB() *statedb.StateDB {
 
 // DeployTestContract deploy a test erc20 contract and returns the contract address
 func (suite *KeeperTestSuite) DeployTestContract(t require.TestingT, owner common.Address, supply *big.Int) common.Address {
-	ctx := sdk.WrapSDKContext(suite.ctx)
 	chainID := suite.app.EvmKeeper.ChainID()
 
 	ctorArgs, err := types.ERC20Contract.ABI.Pack("", owner, supply)
@@ -271,7 +271,7 @@ func (suite *KeeperTestSuite) DeployTestContract(t require.TestingT, owner commo
 		Data: (*hexutil.Bytes)(&data),
 	})
 	require.NoError(t, err)
-	res, err := suite.queryClient.EstimateGas(ctx, &types.EthCallRequest{
+	res, err := suite.queryClient.EstimateGas(suite.ctx, &types.EthCallRequest{
 		Args:            args,
 		GasCap:          uint64(config.DefaultGasCap),
 		ProposerAddress: suite.ctx.BlockHeader().ProposerAddress,
@@ -307,21 +307,20 @@ func (suite *KeeperTestSuite) DeployTestContract(t require.TestingT, owner commo
 	erc20DeployTx.From = suite.address.Hex()
 	err = erc20DeployTx.Sign(ethtypes.LatestSignerForChainID(chainID), suite.signer)
 	require.NoError(t, err)
-	rsp, err := suite.app.EvmKeeper.EthereumTx(ctx, erc20DeployTx)
+	rsp, err := suite.app.EvmKeeper.EthereumTx(suite.ctx, erc20DeployTx)
 	require.NoError(t, err)
 	require.Empty(t, rsp.VmError)
 	return crypto.CreateAddress(suite.address, nonce)
 }
 
 func (suite *KeeperTestSuite) TransferERC20Token(t require.TestingT, contractAddr, from, to common.Address, amount *big.Int) *types.MsgEthereumTx {
-	ctx := sdk.WrapSDKContext(suite.ctx)
 	chainID := suite.app.EvmKeeper.ChainID()
 
 	transferData, err := types.ERC20Contract.ABI.Pack("transfer", to, amount)
 	require.NoError(t, err)
 	args, err := json.Marshal(&types.TransactionArgs{To: &contractAddr, From: &from, Data: (*hexutil.Bytes)(&transferData)})
 	require.NoError(t, err)
-	res, err := suite.queryClient.EstimateGas(ctx, &types.EthCallRequest{
+	res, err := suite.queryClient.EstimateGas(suite.ctx, &types.EthCallRequest{
 		Args:            args,
 		GasCap:          25_000_000,
 		ProposerAddress: suite.ctx.BlockHeader().ProposerAddress,
@@ -361,7 +360,7 @@ func (suite *KeeperTestSuite) TransferERC20Token(t require.TestingT, contractAdd
 	ercTransferTx.From = suite.address.Hex()
 	err = ercTransferTx.Sign(ethtypes.LatestSignerForChainID(chainID), suite.signer)
 	require.NoError(t, err)
-	rsp, err := suite.app.EvmKeeper.EthereumTx(ctx, ercTransferTx)
+	rsp, err := suite.app.EvmKeeper.EthereumTx(suite.ctx, ercTransferTx)
 	require.NoError(t, err)
 	require.Empty(t, rsp.VmError)
 	return ercTransferTx
@@ -369,7 +368,6 @@ func (suite *KeeperTestSuite) TransferERC20Token(t require.TestingT, contractAdd
 
 // DeployTestMessageCall deploy a test erc20 contract and returns the contract address
 func (suite *KeeperTestSuite) DeployTestMessageCall(t require.TestingT) common.Address {
-	ctx := sdk.WrapSDKContext(suite.ctx)
 	chainID := suite.app.EvmKeeper.ChainID()
 
 	data := types.TestMessageCall.Bin
@@ -379,7 +377,7 @@ func (suite *KeeperTestSuite) DeployTestMessageCall(t require.TestingT) common.A
 	})
 	require.NoError(t, err)
 
-	res, err := suite.queryClient.EstimateGas(ctx, &types.EthCallRequest{
+	res, err := suite.queryClient.EstimateGas(suite.ctx, &types.EthCallRequest{
 		Args:            args,
 		GasCap:          uint64(config.DefaultGasCap),
 		ProposerAddress: suite.ctx.BlockHeader().ProposerAddress,
@@ -417,7 +415,7 @@ func (suite *KeeperTestSuite) DeployTestMessageCall(t require.TestingT) common.A
 	erc20DeployTx.From = suite.address.Hex()
 	err = erc20DeployTx.Sign(ethtypes.LatestSignerForChainID(chainID), suite.signer)
 	require.NoError(t, err)
-	rsp, err := suite.app.EvmKeeper.EthereumTx(ctx, erc20DeployTx)
+	rsp, err := suite.app.EvmKeeper.EthereumTx(suite.ctx, erc20DeployTx)
 	require.NoError(t, err)
 	require.Empty(t, rsp.VmError)
 	return crypto.CreateAddress(suite.address, nonce)

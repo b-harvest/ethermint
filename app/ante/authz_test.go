@@ -275,7 +275,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 					},
 				),
 			},
-			expectedCode: sdkerrors.ErrUnpackAny.ABCICode(),
+			expectedCode: sdkerrors.ErrUnauthorized.ABCICode(),
 		},
 		{
 			name: "a MsgExec with nested MsgExec messages that has invalid messages is blocked",
@@ -288,7 +288,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 					},
 				),
 			},
-			expectedCode: sdkerrors.ErrUnpackAny.ABCICode(),
+			expectedCode: sdkerrors.ErrUnauthorized.ABCICode(),
 		},
 		{
 			name: "a MsgExec with more nested MsgExec messages than allowed and with valid messages is blocked",
@@ -326,7 +326,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 			bz, err := txEncoder(tx)
 			suite.Require().NoError(err)
 
-			resCheckTx, err := suite.app.CheckTx(
+			resCheckTx, _ := suite.app.CheckTx(
 				&abci.RequestCheckTx{
 					Tx:   bz,
 					Type: abci.CheckTxType_New,
@@ -334,9 +334,10 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 			)
 			suite.Require().Equal(resCheckTx.Code, tc.expectedCode, resCheckTx.Log)
 
-			resFinalizeBlock, err := suite.app.FinalizeBlock(
+			resFinalizeBlock, _ := suite.app.FinalizeBlock(
 				&abci.RequestFinalizeBlock{
-					Txs: [][]byte{bz},
+					Height: suite.app.LastBlockHeight() + 1,
+					Txs:    [][]byte{bz},
 				},
 			)
 			suite.Require().Equal(resFinalizeBlock.TxResults[0].Code, tc.expectedCode, resFinalizeBlock.TxResults[0].Log)

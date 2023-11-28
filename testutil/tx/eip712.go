@@ -198,13 +198,8 @@ func signCosmosEIP712Tx(
 		return nil, err
 	}
 
-	signMode := signing.SignMode_SIGN_MODE_DIRECT
-	if args.UseLegacyExtension {
-		signMode = signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON
-	}
-
 	keyringSigner := NewSigner(priv)
-	signature, pubKey, err := keyringSigner.SignByAddress(from, sigHash, signMode)
+	signature, pubKey, err := keyringSigner.SignByAddress(from, sigHash, signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	if err != nil {
 		return nil, err
 	}

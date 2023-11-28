@@ -15,7 +15,7 @@ import (
 // a single params key.
 func MigrateStore(
 	ctx sdk.Context,
-	storeKey storetypes.StoreKey,
+	store storetypes.KVStore,
 	cdc codec.BinaryCodec,
 ) error {
 	var (
@@ -23,8 +23,6 @@ func MigrateStore(
 		chainConfig types.ChainConfig
 		params      types.Params
 	)
-
-	store := ctx.KVStore(storeKey)
 
 	denom := string(store.Get(types.ParamStoreKeyEVMDenom))
 

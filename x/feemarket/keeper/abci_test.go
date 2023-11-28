@@ -23,7 +23,7 @@ func (suite *KeeperTestSuite) TestEndBlock() {
 			"pass",
 			false,
 			func() {
-				meter := storetypes.NewGasMeter(uint64(1000000000))
+				meter := storetypes.NewGasMeter(uint64(875000001))
 				suite.ctx = suite.ctx.WithBlockGasMeter(meter)
 				suite.app.FeeMarketKeeper.SetTransientBlockGasWanted(suite.ctx, 5000000)
 			},
@@ -39,8 +39,9 @@ func (suite *KeeperTestSuite) TestEndBlock() {
 
 			tc.malleate()
 			suite.app.FeeMarketKeeper.EndBlocker(suite.ctx.WithBlockHeight(1))
-			gasWanted := suite.app.FeeMarketKeeper.GetBlockGasWanted(suite.ctx)
+			gasWanted, err := suite.app.FeeMarketKeeper.GetBlockGasWanted(suite.ctx)
 			suite.Require().Equal(tc.expGasWanted, gasWanted, tc.name)
+			suite.Require().NoError(err)
 		})
 	}
 }

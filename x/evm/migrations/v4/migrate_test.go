@@ -38,7 +38,7 @@ func TestMigrate(t *testing.T) {
 	kvStore := ctx.KVStore(storeKey)
 
 	legacySubspace := newMockSubspace(types.DefaultParams())
-	require.NoError(t, v4.MigrateStore(ctx, storeKey, legacySubspace, cdc))
+	require.NoError(t, v4.MigrateStore(ctx, kvStore, legacySubspace, cdc))
 
 	// Get all the new parameters from the kvStore
 	var evmDenom string

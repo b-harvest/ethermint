@@ -7,6 +7,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -78,8 +79,7 @@ func (suite *KeeperTestSuite) TestQueryAccount() {
 			suite.SetupTest() // reset
 
 			tc.malleate()
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			res, err := suite.queryClient.Account(ctx, req)
+			res, err := suite.queryClient.Account(suite.ctx, req)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -122,7 +122,7 @@ func (suite *KeeperTestSuite) TestQueryCosmosAccount() {
 				expAccount = &types.QueryCosmosAccountResponse{
 					CosmosAddress: sdk.AccAddress(suite.address.Bytes()).String(),
 					Sequence:      0,
-					AccountNumber: 0,
+					AccountNumber: 7,
 				}
 				req = &types.QueryCosmosAccountRequest{
 					Address: suite.address.String(),
@@ -135,13 +135,13 @@ func (suite *KeeperTestSuite) TestQueryCosmosAccount() {
 			func() {
 				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, suite.address.Bytes())
 				suite.Require().NoError(acc.SetSequence(10))
-				suite.Require().NoError(acc.SetAccountNumber(1))
+				suite.Require().NoError(acc.SetAccountNumber(8))
 				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
 				expAccount = &types.QueryCosmosAccountResponse{
 					CosmosAddress: sdk.AccAddress(suite.address.Bytes()).String(),
 					Sequence:      10,
-					AccountNumber: 1,
+					AccountNumber: 8,
 				}
 				req = &types.QueryCosmosAccountRequest{
 					Address: suite.address.String(),
@@ -156,8 +156,7 @@ func (suite *KeeperTestSuite) TestQueryCosmosAccount() {
 			suite.SetupTest() // reset
 
 			tc.malleate()
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			res, err := suite.queryClient.CosmosAccount(ctx, req)
+			res, err := suite.queryClient.CosmosAccount(suite.ctx, req)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -215,8 +214,7 @@ func (suite *KeeperTestSuite) TestQueryBalance() {
 			suite.SetupTest() // reset
 
 			tc.malleate()
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			res, err := suite.queryClient.Balance(ctx, req)
+			res, err := suite.queryClient.Balance(suite.ctx, req)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -274,8 +272,7 @@ func (suite *KeeperTestSuite) TestQueryStorage() {
 			tc.malleate(vmdb)
 			suite.Require().NoError(vmdb.Commit())
 
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			res, err := suite.queryClient.Storage(ctx, req)
+			res, err := suite.queryClient.Storage(suite.ctx, req)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -333,8 +330,7 @@ func (suite *KeeperTestSuite) TestQueryCode() {
 			tc.malleate(vmdb)
 			suite.Require().NoError(vmdb.Commit())
 
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			res, err := suite.queryClient.Code(ctx, req)
+			res, err := suite.queryClient.Code(suite.ctx, req)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -403,10 +399,9 @@ func (suite *KeeperTestSuite) TestQueryTxLogs() {
 }
 
 func (suite *KeeperTestSuite) TestQueryParams() {
-	ctx := sdk.WrapSDKContext(suite.ctx)
 	expParams := types.DefaultParams()
 
-	res, err := suite.queryClient.Params(ctx, &types.QueryParamsRequest{})
+	res, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
 	suite.Require().NoError(err)
 	suite.Require().Equal(expParams, res.Params)
 }
@@ -440,7 +435,7 @@ func (suite *KeeperTestSuite) TestQueryValidatorAccount() {
 				expAccount = &types.QueryValidatorAccountResponse{
 					AccountAddress: sdk.AccAddress(suite.address.Bytes()).String(),
 					Sequence:       0,
-					AccountNumber:  0,
+					AccountNumber:  7,
 				}
 				req = &types.QueryValidatorAccountRequest{
 					ConsAddress: suite.consAddress.String(),
@@ -453,13 +448,13 @@ func (suite *KeeperTestSuite) TestQueryValidatorAccount() {
 			func() {
 				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, suite.address.Bytes())
 				suite.Require().NoError(acc.SetSequence(10))
-				suite.Require().NoError(acc.SetAccountNumber(1))
+				suite.Require().NoError(acc.SetAccountNumber(8))
 				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
 				expAccount = &types.QueryValidatorAccountResponse{
 					AccountAddress: sdk.AccAddress(suite.address.Bytes()).String(),
 					Sequence:       10,
-					AccountNumber:  1,
+					AccountNumber:  8,
 				}
 				req = &types.QueryValidatorAccountRequest{
 					ConsAddress: suite.consAddress.String(),
@@ -474,8 +469,7 @@ func (suite *KeeperTestSuite) TestQueryValidatorAccount() {
 			suite.SetupTest() // reset
 
 			tc.malleate()
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			res, err := suite.queryClient.ValidatorAccount(ctx, req)
+			res, err := suite.queryClient.ValidatorAccount(suite.ctx, req)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -584,6 +578,8 @@ func (suite *KeeperTestSuite) TestEstimateGas() {
 			"erc20 transfer",
 			func() {
 				contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
+				_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+				suite.Require().NoError(err)
 				suite.Commit()
 				transferData, err := types.ERC20Contract.ABI.Pack("transfer", common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(1000))
 				suite.Require().NoError(err)
@@ -659,6 +655,8 @@ func (suite *KeeperTestSuite) TestEstimateGas() {
 			"erc20 transfer w/ enableFeemarket",
 			func() {
 				contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
+				_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+				suite.Require().NoError(err)
 				suite.Commit()
 				transferData, err := types.ERC20Contract.ABI.Pack("transfer", common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(1000))
 				suite.Require().NoError(err)
@@ -741,7 +739,7 @@ func (suite *KeeperTestSuite) TestEstimateGas() {
 				ProposerAddress: suite.ctx.BlockHeader().ProposerAddress,
 			}
 
-			rsp, err := suite.queryClient.EstimateGas(sdk.WrapSDKContext(suite.ctx), &req)
+			rsp, err := suite.queryClient.EstimateGas(suite.ctx, &req)
 			if tc.expPass {
 				suite.Require().NoError(err)
 				suite.Require().Equal(int64(tc.expGas), int64(rsp.Gas))
@@ -840,11 +838,14 @@ func (suite *KeeperTestSuite) TestTraceTx() {
 				suite.Require().NoError(vmdb.Commit())
 
 				contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
+				_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+				suite.Require().NoError(err)
 				suite.Commit()
 				// Generate token transfer transaction
 				firstTx := suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
 				txMsg = suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
-				suite.Commit()
+				_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+				suite.Require().NoError(err)
 
 				predecessors = append(predecessors, firstTx)
 			},
@@ -940,9 +941,13 @@ func (suite *KeeperTestSuite) TestTraceTx() {
 			suite.SetupTest()
 			// Deploy contract
 			contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
+			_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+			suite.Require().NoError(err)
 			suite.Commit()
 			// Generate token transfer transaction
 			txMsg = suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
+			_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+			suite.Require().NoError(err)
 			suite.Commit()
 
 			tc.malleate()
@@ -955,7 +960,7 @@ func (suite *KeeperTestSuite) TestTraceTx() {
 			if chainID != nil {
 				traceReq.ChainId = chainID.Int64()
 			}
-			res, err := suite.queryClient.TraceTx(sdk.WrapSDKContext(suite.ctx), &traceReq)
+			res, err := suite.queryClient.TraceTx(suite.ctx, &traceReq)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -1060,11 +1065,14 @@ func (suite *KeeperTestSuite) TestTraceBlock() {
 				suite.Require().NoError(vmdb.Commit())
 
 				contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
+				_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+				suite.Require().NoError(err)
 				suite.Commit()
 				// create multiple transactions in the same block
 				firstTx := suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
 				secondTx := suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
-				suite.Commit()
+				_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+				suite.Require().NoError(err)
 				// overwrite txs to include only the ones on new block
 				txs = append([]*types.MsgEthereumTx{}, firstTx, secondTx)
 			},
@@ -1116,9 +1124,13 @@ func (suite *KeeperTestSuite) TestTraceBlock() {
 			suite.SetupTest()
 			// Deploy contract
 			contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
+			_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+			suite.Require().NoError(err)
 			suite.Commit()
 			// Generate token transfer transaction
 			txMsg := suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
+			_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
+			suite.Require().NoError(err)
 			suite.Commit()
 
 			txs = append(txs, txMsg)
@@ -1133,7 +1145,7 @@ func (suite *KeeperTestSuite) TestTraceBlock() {
 				traceReq.ChainId = chainID.Int64()
 			}
 
-			res, err := suite.queryClient.TraceBlock(sdk.WrapSDKContext(suite.ctx), &traceReq)
+			res, err := suite.queryClient.TraceBlock(suite.ctx, &traceReq)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -1173,14 +1185,14 @@ func (suite *KeeperTestSuite) TestNonceInQuery() {
 	})
 	suite.Require().NoError(err)
 	proposerAddress := suite.ctx.BlockHeader().ProposerAddress
-	_, err = suite.queryClient.EstimateGas(sdk.WrapSDKContext(suite.ctx), &types.EthCallRequest{
+	_, err = suite.queryClient.EstimateGas(suite.ctx, &types.EthCallRequest{
 		Args:            args,
 		GasCap:          uint64(config.DefaultGasCap),
 		ProposerAddress: proposerAddress,
 	})
 	suite.Require().NoError(err)
 
-	_, err = suite.queryClient.EthCall(sdk.WrapSDKContext(suite.ctx), &types.EthCallRequest{
+	_, err = suite.queryClient.EthCall(suite.ctx, &types.EthCallRequest{
 		Args:            args,
 		GasCap:          uint64(config.DefaultGasCap),
 		ProposerAddress: proposerAddress,

@@ -12,8 +12,11 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/gov"
+	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/evmos/ethermint/ethereum/eip712"
 	"github.com/evmos/ethermint/testutil"
@@ -26,6 +29,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/simapp"
 	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/x/evidence"
 	txsigning "cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -42,18 +46,23 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authz "github.com/cosmos/cosmos-sdk/x/authz"
+	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 
 	evtypes "cosmossdk.io/x/evidence/types"
 	"cosmossdk.io/x/feegrant"
+	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdktestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/cosmos/cosmos-sdk/x/bank"
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/evmos/ethermint/app"
 	ante "github.com/evmos/ethermint/app/ante"
 	"github.com/evmos/ethermint/encoding"
 	"github.com/evmos/ethermint/tests"
+	"github.com/evmos/ethermint/x/evm"
 	"github.com/evmos/ethermint/x/evm/statedb"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
@@ -170,6 +179,9 @@ func (suite *AnteTestSuite) SetupTest() {
 	suite.ctx = suite.ctx.WithBlockHeight(header.Height - 1)
 	suite.ctx, err = testutil.Commit(suite.ctx, suite.app, time.Second*0, nil)
 	suite.Require().NoError(err)
+
+	encCfg := sdktestutil.MakeTestEncodingConfig(auth.AppModuleBasic{}, authzmodule.AppModuleBasic{}, bank.AppModuleBasic{}, evidence.AppModuleBasic{}, evm.AppModuleBasic{}, feegrantmodule.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
+	legacytx.RegressionTestingAminoCodec = encCfg.Amino
 }
 
 func (s *AnteTestSuite) BuildTestEthTx(
@@ -272,6 +284,7 @@ func (suite *AnteTestSuite) CreateTestTxBuilder(
 			ChainID:       suite.ctx.ChainID(),
 			AccountNumber: accNum,
 			Sequence:      txData.GetNonce(),
+			PubKey:        priv.PubKey(),
 		}
 		sigV2, err = tx.SignWithPrivKey(
 			suite.ctx,

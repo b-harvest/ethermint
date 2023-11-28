@@ -161,6 +161,9 @@ func setupTest(localMinGasPrices string) (*ethsecp256k1.PrivKey, banktypes.MsgSe
 			Amount: sdkmath.NewInt(10000),
 		}},
 	}
+	s.app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: s.ctx.BlockHeight(),
+	})
 	s.Commit()
 	return privKey, msg
 }
@@ -280,13 +283,17 @@ func prepareEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereu
 func checkEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereumTx) *abci.ResponseCheckTx {
 	bz := prepareEthTx(priv, msgEthereumTx)
 	req := abci.RequestCheckTx{Tx: bz}
-	res, _ := s.app.BaseApp.CheckTx(&req)
+	res, _ := s.app.CheckTx(&req)
 	return res
 }
 
 func finalizeEthBlock(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereumTx) *abci.ResponseFinalizeBlock {
 	bz := prepareEthTx(priv, msgEthereumTx)
-	req := abci.RequestFinalizeBlock{Txs: [][]byte{bz}}
-	res, _ := s.app.BaseApp.FinalizeBlock(&req)
+	req := abci.RequestFinalizeBlock{
+		Height:          s.app.LastBlockHeight() + 1,
+		Txs:             [][]byte{bz},
+		ProposerAddress: s.ctx.BlockHeader().ProposerAddress,
+	}
+	res, _ := s.app.FinalizeBlock(&req)
 	return res
 }

@@ -600,7 +600,11 @@ func checkEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereumT
 
 func finalizeEthBlock(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereumTx) *abci.ResponseFinalizeBlock {
 	bz := prepareEthTx(priv, msgEthereumTx)
-	req := abci.RequestFinalizeBlock{Txs: [][]byte{bz}}
+	req := abci.RequestFinalizeBlock{
+		Height:          s.app.LastBlockHeight() + 1,
+		Txs:             [][]byte{bz},
+		ProposerAddress: s.ctx.BlockHeader().ProposerAddress,
+	}
 	res, _ := s.app.BaseApp.FinalizeBlock(&req)
 	return res
 }
@@ -649,6 +653,7 @@ func prepareCosmosTx(priv *ethsecp256k1.PrivKey, gasPrice *sdkmath.Int, msgs ...
 		ChainID:       s.ctx.ChainID(),
 		AccountNumber: accNumber,
 		Sequence:      seq,
+		PubKey:        priv.PubKey(),
 	}
 	sigV2, err = tx.SignWithPrivKey(
 		context.TODO(),
@@ -677,7 +682,10 @@ func checkTx(priv *ethsecp256k1.PrivKey, gasPrice *sdkmath.Int, msgs ...sdk.Msg)
 
 func finalizeBlock(priv *ethsecp256k1.PrivKey, gasPrice *sdkmath.Int, msgs ...sdk.Msg) *abci.ResponseFinalizeBlock {
 	bz := prepareCosmosTx(priv, gasPrice, msgs...)
-	req := abci.RequestFinalizeBlock{Txs: [][]byte{bz}}
+	req := abci.RequestFinalizeBlock{
+		Height: s.app.LastBlockHeight() + 1,
+		Txs:    [][]byte{bz},
+	}
 	res, _ := s.app.BaseApp.FinalizeBlock(&req)
 	return res
 }

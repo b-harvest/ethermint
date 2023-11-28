@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/log"
@@ -17,11 +18,17 @@ import (
 func TestEthermintAppExport(t *testing.T) {
 	db := dbm.NewMemDB()
 	app := SetupWithDB(false, nil, db)
+
+	// finalize block so we have CheckTx state set
+	_, err := app.FinalizeBlock(&types.RequestFinalizeBlock{
+		Height: app.LastBlockHeight() + 1,
+	})
+	require.NoError(t, err, "ExportAppStateAndValidators FinalizeBlock failed")
 	app.Commit()
 
 	// Making a new app object with the db, so that initchain hasn't been called
 	app2 := NewEthermintApp(
-		log.NewLogger(os.Stdout), // TODO(dudong2)
+		log.NewLogger(os.Stdout),
 		db,
 		nil,
 		true,
@@ -32,6 +39,6 @@ func TestEthermintAppExport(t *testing.T) {
 		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
 		baseapp.SetChainID(ChainID),
 	)
-	_, err := app2.ExportAppStateAndValidators(false, []string{}, []string{})
+	_, err = app2.ExportAppStateAndValidators(false, []string{}, []string{})
 	require.NoError(t, err, "ExportAppStateAndValidators should not have an error")
 }

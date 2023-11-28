@@ -618,7 +618,7 @@ func startGrpcServer(
 func startAPIServer(
 	ctx context.Context,
 	g *errgroup.Group,
-	cmtCfg *cmtcfg.Config,
+	_ *cmtcfg.Config,
 	svrCfg serverconfig.Config,
 	clientCtx client.Context,
 	svrCtx *server.Context,

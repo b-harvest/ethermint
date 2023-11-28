@@ -62,7 +62,7 @@ func NewSigner(sk cryptotypes.PrivKey) keyring.Signer {
 }
 
 // Sign signs the message using the underlying private key
-func (s Signer) Sign(_ string, msg []byte, signMode signing.SignMode) ([]byte, cryptotypes.PubKey, error) {
+func (s Signer) Sign(_ string, msg []byte, _ signing.SignMode) ([]byte, cryptotypes.PubKey, error) {
 	if s.privKey.Type() != ethsecp256k1.KeyType {
 		return nil, nil, fmt.Errorf(
 			"invalid private key type for signing ethereum tx; expected %s, got %s",

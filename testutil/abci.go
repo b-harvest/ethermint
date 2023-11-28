@@ -3,6 +3,7 @@ package testutil
 import (
 	"time"
 
+	"github.com/cometbft/cometbft/abci/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,7 +21,9 @@ func Commit(ctx sdk.Context, app *app.EthermintApp, t time.Duration, vs *tmtypes
 	header := ctx.BlockHeader()
 
 	if vs != nil {
-		res, err := app.EndBlocker(ctx.WithBlockHeight(header.Height))
+		res, err := app.FinalizeBlock(&types.RequestFinalizeBlock{
+			Height: header.Height,
+		})
 		if err != nil {
 			return ctx, err
 		}
@@ -32,7 +35,9 @@ func Commit(ctx sdk.Context, app *app.EthermintApp, t time.Duration, vs *tmtypes
 		header.ValidatorsHash = vs.Hash()
 		header.NextValidatorsHash = nextVals.Hash()
 	} else {
-		app.EndBlocker(ctx.WithBlockHeight(header.Height))
+		app.FinalizeBlock(&types.RequestFinalizeBlock{
+			Height: header.Height,
+		})
 	}
 
 	_, err := app.Commit()
@@ -44,7 +49,14 @@ func Commit(ctx sdk.Context, app *app.EthermintApp, t time.Duration, vs *tmtypes
 	header.Time = header.Time.Add(t)
 	header.AppHash = app.LastCommitID().Hash
 
-	app.BeginBlocker(ctx.WithBlockHeader(header))
+	_, err = app.FinalizeBlock(&types.RequestFinalizeBlock{
+		Height: header.Height,
+		Time:   header.Time,
+		Hash:   header.AppHash,
+	})
+	if err != nil {
+		return ctx, err
+	}
 
 	return ctx.WithBlockHeader(header), nil
 }

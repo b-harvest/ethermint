@@ -21,6 +21,7 @@ import (
 	"math/big"
 
 	protov2 "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
@@ -33,6 +34,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	evmv1 "github.com/evmos/ethermint/api/ethermint/evm/v1"
 
 	"github.com/evmos/ethermint/types"
 
@@ -223,7 +225,16 @@ func (msg *MsgEthereumTx) GetMsgs() []sdk.Msg {
 }
 
 func (msg *MsgEthereumTx) GetMsgsV2() ([]protov2.Message, error) {
-	return nil, nil // TODO(dudong2)
+	m := evmv1.MsgEthereumTx{
+		Data: &anypb.Any{
+			TypeUrl: msg.Data.TypeUrl,
+			Value:   msg.Data.Value,
+		},
+		Size: msg.Size_,
+		Hash: msg.Hash,
+		From: msg.From,
+	}
+	return []protov2.Message{&m}, nil
 }
 
 // GetSigners returns the expected signers for an Ethereum transaction message.
@@ -274,7 +285,7 @@ func (msg *MsgEthereumTx) Sign(ethSigner ethtypes.Signer, keyringSigner keyring.
 	tx := msg.AsTransaction()
 	txHash := ethSigner.Hash(tx)
 
-	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes(), signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON) // TODO(dudong2)
+	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes(), signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	if err != nil {
 		return err
 	}

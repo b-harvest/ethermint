@@ -16,6 +16,7 @@
 package eip712
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -50,6 +51,7 @@ func SetEncodingConfig(cfg params.EncodingConfig) {
 func GetEIP712BytesForMsg(signDocBytes []byte) ([]byte, error) {
 	typedData, err := GetEIP712TypedDataForMsg(signDocBytes)
 	if err != nil {
+		_, err := GetEIP712TypedDataForMsg(signDocBytes)
 		return nil, err
 	}
 
@@ -229,14 +231,12 @@ func validatePayloadMessages(msgs []sdk.Msg) error {
 		return errors.New("unable to build EIP-712 payload: transaction does contain any messages")
 	}
 
-	var msgSigner sdk.AccAddress
-
+	var msgSigner []byte
 	for i, m := range msgs {
-		legacyMsg, ok := m.(sdk.LegacyMsg)
-		if !ok {
-			return errors.New("")
+		msgSigners, _, err := protoCodec.GetMsgV1Signers(m)
+		if err != nil {
+			return errors.New("unable to build EIP-712 payload: unable to get signers from messages")
 		}
-		msgSigners := legacyMsg.GetSigners()
 
 		if len(msgSigners) != 1 {
 			return errors.New("unable to build EIP-712 payload: expect exactly 1 signer")
@@ -247,7 +247,7 @@ func validatePayloadMessages(msgs []sdk.Msg) error {
 			continue
 		}
 
-		if !msgSigner.Equals(msgSigners[0]) {
+		if !bytes.Equal(msgSigner, msgSigners[0]) {
 			return errors.New("unable to build EIP-712 payload: multiple signers detected")
 		}
 	}

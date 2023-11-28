@@ -16,6 +16,7 @@
 package eip712
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -95,21 +96,16 @@ func legacyDecodeAminoSignDoc(signDocBytes []byte) (apitypes.TypedData, error) {
 		msgs[i] = m
 	}
 
-	if err := legacyValidatePayloadMessages(msgs); err != nil {
+	signer, err := legacyValidatePayloadMessages(msgs)
+	if err != nil {
 		return apitypes.TypedData{}, err
 	}
 
 	// Use first message for fee payer and type inference
 	msg := msgs[0]
 
-	legacyMsg, ok := msg.(sdk.LegacyMsg)
-	if !ok {
-		return apitypes.TypedData{}, errors.New("")
-	}
-	msgSigners := legacyMsg.GetSigners()
-
 	// By convention, the fee payer is the first address in the list of signers.
-	feePayer := msgSigners[0]
+	feePayer := signer
 	feeDelegation := &FeeDelegationOptions{
 		FeePayer: feePayer,
 	}
@@ -175,7 +171,8 @@ func legacyDecodeProtobufSignDoc(signDocBytes []byte) (apitypes.TypedData, error
 		msgs[i] = m
 	}
 
-	if err := legacyValidatePayloadMessages(msgs); err != nil {
+	signer, err := legacyValidatePayloadMessages(msgs)
+	if err != nil {
 		return apitypes.TypedData{}, err
 	}
 
@@ -194,13 +191,7 @@ func legacyDecodeProtobufSignDoc(signDocBytes []byte) (apitypes.TypedData, error
 		Gas:    authInfo.Fee.GasLimit,
 	}
 
-	legacyMsg, ok := msg.(sdk.LegacyMsg)
-	if !ok {
-		return apitypes.TypedData{}, errors.New("")
-	}
-	msgSigners := legacyMsg.GetSigners()
-
-	feePayer := msgSigners[0]
+	feePayer := signer
 	feeDelegation := &FeeDelegationOptions{
 		FeePayer: feePayer,
 	}
@@ -232,28 +223,26 @@ func legacyDecodeProtobufSignDoc(signDocBytes []byte) (apitypes.TypedData, error
 
 // validatePayloadMessages ensures that the transaction messages can be represented in an EIP-712
 // encoding by checking that messages exist, are of the same type, and share a single signer.
-func legacyValidatePayloadMessages(msgs []sdk.Msg) error {
+func legacyValidatePayloadMessages(msgs []sdk.Msg) ([]byte, error) {
 	if len(msgs) == 0 {
-		return errors.New("unable to build EIP-712 payload: transaction does contain any messages")
+		return nil, errors.New("unable to build EIP-712 payload: transaction does contain any messages")
 	}
 
 	var msgType string
-	var msgSigner sdk.AccAddress
-
+	var msgSigner []byte
 	for i, m := range msgs {
 		t, err := getMsgType(m)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		legacyMsg, ok := m.(sdk.LegacyMsg)
-		if !ok {
-			return errors.New("")
+		msgSigners, _, err := protoCodec.GetMsgV1Signers(m)
+		if err != nil {
+			return nil, errors.New("unable to build EIP-712 payload: unable to get signers from messages")
 		}
-		msgSigners := legacyMsg.GetSigners()
 
 		if len(msgSigners) != 1 {
-			return errors.New("unable to build EIP-712 payload: expect exactly 1 signer")
+			return nil, errors.New("unable to build EIP-712 payload: expect exactly 1 signer")
 		}
 
 		if i == 0 {
@@ -263,15 +252,15 @@ func legacyValidatePayloadMessages(msgs []sdk.Msg) error {
 		}
 
 		if t != msgType {
-			return errors.New("unable to build EIP-712 payload: different types of messages detected")
+			return nil, errors.New("unable to build EIP-712 payload: different types of messages detected")
 		}
 
-		if !msgSigner.Equals(msgSigners[0]) {
-			return errors.New("unable to build EIP-712 payload: multiple msgSigners detected")
+		if !bytes.Equal(msgSigner, msgSigners[0]) {
+			return nil, errors.New("unable to build EIP-712 payload: multiple msgSigners detected")
 		}
 	}
 
-	return nil
+	return msgSigner, nil
 }
 
 // getMsgType returns the message type prefix for the given Cosmos SDK Msg
