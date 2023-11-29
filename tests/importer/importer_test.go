@@ -29,6 +29,7 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 	ethrlp "github.com/ethereum/go-ethereum/rlp"
 
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
@@ -135,7 +136,10 @@ func (suite *ImporterTestSuite) TestImportBlocks() {
 		tmheader := suite.ctx.BlockHeader()
 		// fix due to that begin block can't have height 0
 		tmheader.Height = int64(block.NumberU64()) + 1
-		suite.app.BeginBlocker(suite.ctx.WithBlockHeader(tmheader))
+		_, err = suite.app.FinalizeBlock(&types.RequestFinalizeBlock{
+			Height: tmheader.Height,
+		})
+		suite.Require().NoError(err)
 		ctx := suite.app.NewContextLegacy(false, tmheader)
 		ctx = ctx.WithBlockHeight(tmheader.Height)
 		vmdb := statedb.New(ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash())))
