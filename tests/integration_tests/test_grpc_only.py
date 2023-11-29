@@ -108,18 +108,18 @@ def test_grpc_mode(custom_ethermint):
             wait_for_port(grpc_port)
             wait_for_port(api_port)
 
-            def expect_cb(rsp):
+            def expect_cb_internal1(rsp):
                 assert rsp["code"] != 0, str(rsp)
                 return "validator does not exist" in rsp["message"]
 
             # it don't works without proposer address neither
-            grpc_eth_call(api_port, msg, expect_cb, chain_id=9000)
+            grpc_eth_call(api_port, msg, expect_cb_internal1, chain_id=9000)
 
             # pass the first validator's consensus address to grpc query
             addr = custom_ethermint.cosmos_cli(0).consensus_address()
             cons_addr = decode_bech32(addr)
 
-            def expect_cb(rsp):
+            def expect_cb_internal2(rsp):
                 ret = base64.b64decode(rsp["ret"].encode())
                 return "code" not in rsp and 100 == int.from_bytes(ret, "big")
 
@@ -127,7 +127,7 @@ def test_grpc_mode(custom_ethermint):
             grpc_eth_call(
                 api_port,
                 msg,
-                expect_cb,
+                expect_cb_internal2,
                 chain_id=100,
                 proposer_address=base64.b64encode(cons_addr).decode(),
             )

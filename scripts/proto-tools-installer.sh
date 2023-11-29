@@ -33,7 +33,7 @@ esac
 
 TEMPDIR="$(mktemp -d)"
 
-trap "rm -rvf '${TEMPDIR}'" EXIT
+trap 'rm -rvf ${TEMPDIR}' EXIT
 
 f_print_installing_with_padding() {
     printf "Installing %30s ..." "$1" >&2
@@ -67,8 +67,8 @@ f_install_protoc() {
     
     pushd "${TEMPDIR}" >/dev/null
     curl -o "${PROTOC_ZIP}" -sSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"
-    unzip -q -o ${PROTOC_ZIP} -d "${DESTDIR}"/${PREFIX} bin/protoc; \
-    unzip -q -o ${PROTOC_ZIP} -d "${DESTDIR}"/${PREFIX} 'include/*'; \
+    unzip -q -o ${PROTOC_ZIP} -d "${DESTDIR}"/"${PREFIX}" bin/protoc; \
+    unzip -q -o ${PROTOC_ZIP} -d "${DESTDIR}"/"${PREFIX}" 'include/*'; \
     rm -f ${PROTOC_ZIP}
     popd >/dev/null
     f_print_done
@@ -133,10 +133,10 @@ f_install_clang_format() {
             fi
         ;;
         Darwin)
-            echo "\tRun: brew install clang-format" >&2
+            printf "\tRun: brew install clang-format" >&2
         ;;
         *)
-            echo "\tunknown operating system. Skipping." >&2
+            printf "\tunknown operating system. Skipping." >&2
     esac
 }
 
