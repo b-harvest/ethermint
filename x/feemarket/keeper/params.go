@@ -46,7 +46,10 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 		return err
 	}
 
-	store.Set(types.ParamsKey, bz)
+	err = store.Set(types.ParamsKey, bz)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

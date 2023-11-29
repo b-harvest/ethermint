@@ -44,7 +44,7 @@ func MakeConfig(mb module.BasicManager) params.EncodingConfig {
 		ValidatorAddressCodec: address.Bech32Codec{Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix()},
 	}
 
-	// evm/MsgEthereumTx, evm/MsgUpdateParams, feemarket/MsgUpdateParams
+	// evm/MsgEthereumTx, evm/MsgUpdateParams, feemarket/MsgUpdateParams // TODO(dudong2)
 	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgEthereumTx{}), func(msg protov2.Message) ([][]byte, error) {
 		msgEthereumTx, ok := msg.(*evmv1.MsgEthereumTx)
 		if !ok {
@@ -60,21 +60,21 @@ func MakeConfig(mb module.BasicManager) params.EncodingConfig {
 		switch msgEthereumTx.Data.TypeUrl {
 		case "/ethermint.evm.v1.LegacyTx":
 			legacyTx := evmtypes.LegacyTx{}
-			evmtypes.ModuleCdc.Unmarshal(msgEthereumTx.Data.Value, &legacyTx)
+			evmtypes.ModuleCdc.MustUnmarshal(msgEthereumTx.Data.Value, &legacyTx)
 			dataAny, err = evmtypes.PackTxData(&legacyTx)
 			if err != nil {
 				return nil, err
 			}
 		case "/ethermint.evm.v1.DynamicFeeTx":
 			dynamicFeeTx := evmtypes.DynamicFeeTx{}
-			evmtypes.ModuleCdc.Unmarshal(msgEthereumTx.Data.Value, &dynamicFeeTx)
+			evmtypes.ModuleCdc.MustUnmarshal(msgEthereumTx.Data.Value, &dynamicFeeTx)
 			dataAny, err = evmtypes.PackTxData(&dynamicFeeTx)
 			if err != nil {
 				return nil, err
 			}
 		case "/ethermint.evm.v1.AccessListTx":
 			accessListTx := evmtypes.AccessListTx{}
-			evmtypes.ModuleCdc.Unmarshal(msgEthereumTx.Data.Value, &accessListTx)
+			evmtypes.ModuleCdc.MustUnmarshal(msgEthereumTx.Data.Value, &accessListTx)
 			dataAny, err = evmtypes.PackTxData(&accessListTx)
 			if err != nil {
 				return nil, err

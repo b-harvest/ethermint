@@ -70,7 +70,10 @@ func (k *Keeper) EndBlocker(ctx sdk.Context) error {
 	minGasMultiplier := k.GetParams(ctx).MinGasMultiplier
 	limitedGasWanted := math.LegacyNewDec(int64(gasWanted)).Mul(minGasMultiplier)
 	gasWanted = math.LegacyMaxDec(limitedGasWanted, math.LegacyNewDec(int64(gasUsed))).TruncateInt().Uint64()
-	k.SetBlockGasWanted(ctx, gasWanted)
+	err := k.SetBlockGasWanted(ctx, gasWanted)
+	if err != nil {
+		return err
+	}
 
 	defer func() {
 		telemetry.SetGauge(float32(gasWanted), "feemarket", "block_gas")

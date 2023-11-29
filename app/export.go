@@ -191,7 +191,7 @@ func (app *EthermintApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAd
 	/* Handle staking state. */
 
 	// iterate through redelegations, reset creation height
-	app.StakingKeeper.IterateRedelegations(ctx, func(_ int64, red stakingtypes.Redelegation) (stop bool) {
+	err = app.StakingKeeper.IterateRedelegations(ctx, func(_ int64, red stakingtypes.Redelegation) (stop bool) {
 		for i := range red.Entries {
 			red.Entries[i].CreationHeight = 0
 		}
@@ -201,9 +201,12 @@ func (app *EthermintApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAd
 		}
 		return false
 	})
+	if err != nil {
+		panic(err)
+	}
 
 	// iterate through unbonding delegations, reset creation height
-	app.StakingKeeper.IterateUnbondingDelegations(ctx, func(_ int64, ubd stakingtypes.UnbondingDelegation) (stop bool) {
+	err = app.StakingKeeper.IterateUnbondingDelegations(ctx, func(_ int64, ubd stakingtypes.UnbondingDelegation) (stop bool) {
 		for i := range ubd.Entries {
 			ubd.Entries[i].CreationHeight = 0
 		}
@@ -213,6 +216,9 @@ func (app *EthermintApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAd
 		}
 		return false
 	})
+	if err != nil {
+		panic(err)
+	}
 
 	// Iterate through validators by power descending, reset bond heights, and
 	// update bond intra-tx counters.
@@ -232,7 +238,10 @@ func (app *EthermintApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAd
 			validator.Jailed = true
 		}
 
-		app.StakingKeeper.SetValidator(ctx, validator)
+		err = app.StakingKeeper.SetValidator(ctx, validator)
+		if err != nil {
+			panic(err)
+		}
 		counter++
 	}
 
@@ -249,12 +258,18 @@ func (app *EthermintApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAd
 	/* Handle slashing state. */
 
 	// reset start height on signing infos
-	app.SlashingKeeper.IterateValidatorSigningInfos(
+	err = app.SlashingKeeper.IterateValidatorSigningInfos(
 		ctx,
 		func(addr sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo) (stop bool) {
 			info.StartHeight = 0
-			app.SlashingKeeper.SetValidatorSigningInfo(ctx, addr, info)
+			err = app.SlashingKeeper.SetValidatorSigningInfo(ctx, addr, info)
+			if err != nil {
+				log.Fatal(err)
+			}
 			return false
 		},
 	)
+	if err != nil {
+		panic(err)
+	}
 }

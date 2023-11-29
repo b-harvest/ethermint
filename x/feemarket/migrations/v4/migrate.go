@@ -16,9 +16,7 @@ func MigrateStore(
 	legacySubspace types.Subspace,
 	cdc codec.BinaryCodec,
 ) error {
-	var (
-		params types.Params
-	)
+	var params types.Params
 
 	legacySubspace.GetParamSetIfExists(ctx, &params)
 

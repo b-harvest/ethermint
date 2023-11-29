@@ -56,7 +56,7 @@ import (
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"cosmossdk.io/x/upgrade"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
-	// upgradeclient "cosmossdk.io/x/upgrade/client"
+	// upgradeclient "cosmossdk.io/x/upgrade/client" // TODO(dudong2)
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -115,9 +115,7 @@ import (
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v8/modules/core/02-client"
-	// ibcclientclient "github.com/cosmos/ibc-go/v8/modules/core/02-client/client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	// ibcclientclient "github.com/cosmos/ibc-go/v8/modules/core/02-client/client" // TODO(dudong2)
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
@@ -495,8 +493,8 @@ func NewEthermintApp(
 	// register the proposal types
 	govRouter := govv1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper))
+
 	govConfig := govtypes.DefaultConfig()
 	/*
 		Example of setting gov params:
@@ -573,7 +571,15 @@ func NewEthermintApp(
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
+		slashing.NewAppModule(
+			appCodec,
+			app.SlashingKeeper,
+			app.AccountKeeper,
+			app.BankKeeper,
+			app.StakingKeeper,
+			app.GetSubspace(slashingtypes.ModuleName),
+			app.interfaceRegistry,
+		),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
@@ -690,7 +696,10 @@ func NewEthermintApp(
 
 	app.mm.RegisterInvariants(app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	app.mm.RegisterServices(app.configurator)
+	err := app.mm.RegisterServices(app.configurator)
+	if err != nil {
+		panic(err)
+	}
 
 	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
 	// Make sure it's called after `app.mm` and `app.configurator` are set.
@@ -817,7 +826,9 @@ func (app *EthermintApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
-	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
+	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()); err != nil {
+		panic(err)
+	}
 	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 }
 

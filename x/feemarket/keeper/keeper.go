@@ -46,7 +46,11 @@ type Keeper struct {
 
 // NewKeeper generates new fee market module keeper
 func NewKeeper(
-	cdc codec.BinaryCodec, authority sdk.AccAddress, storeService corestoretypes.KVStoreService, transientKey storetypes.StoreKey, ss paramstypes.Subspace,
+	cdc codec.BinaryCodec,
+	authority sdk.AccAddress,
+	storeService corestoretypes.KVStoreService,
+	transientKey storetypes.StoreKey,
+	ss paramstypes.Subspace,
 ) Keeper {
 	// ensure authority account is correctly formatted
 	if err := sdk.VerifyAddressFormat(authority); err != nil {
@@ -74,10 +78,15 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // SetBlockGasWanted sets the block gas wanted to the store.
 // CONTRACT: this should be only called during EndBlock.
-func (k Keeper) SetBlockGasWanted(ctx sdk.Context, gas uint64) {
+func (k Keeper) SetBlockGasWanted(ctx sdk.Context, gas uint64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	gasBz := sdk.Uint64ToBigEndian(gas)
-	store.Set(types.KeyPrefixBlockGasWanted, gasBz)
+	err := store.Set(types.KeyPrefixBlockGasWanted, gasBz)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetBlockGasWanted returns the last block gas wanted value from the store.

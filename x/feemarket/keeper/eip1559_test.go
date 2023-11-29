@@ -95,7 +95,8 @@ func (suite *KeeperTestSuite) TestCalculateBaseFee() {
 			suite.ctx = suite.ctx.WithBlockHeight(tc.blockHeight)
 
 			// Set parent block gas
-			suite.app.FeeMarketKeeper.SetBlockGasWanted(suite.ctx, tc.parentBlockGasWanted)
+			err := suite.app.FeeMarketKeeper.SetBlockGasWanted(suite.ctx, tc.parentBlockGasWanted)
+			suite.Require().NoError(err)
 
 			// Set next block target/gasLimit through Consensus Param MaxGas
 			blockParams := tmproto.BlockParams{

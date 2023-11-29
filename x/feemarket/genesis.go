@@ -35,7 +35,10 @@ func InitGenesis(
 		panic(errorsmod.Wrap(err, "could not set parameters at genesis"))
 	}
 
-	k.SetBlockGasWanted(ctx, data.BlockGas)
+	err = k.SetBlockGasWanted(ctx, data.BlockGas)
+	if err != nil {
+		panic(errorsmod.Wrap(err, "could not set block gas wanted"))
+	}
 
 	return []abci.ValidatorUpdate{}
 }

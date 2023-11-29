@@ -151,15 +151,13 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 // BeginBlock returns the begin block for the fee market module.
 func (am AppModule) BeginBlock(ctx sdk.Context) error {
-	am.keeper.BeginBlocker(ctx)
-	return nil
+	return am.keeper.BeginBlocker(ctx)
 }
 
 // EndBlock returns the end blocker for the fee market module. It returns no validator
 // updates.
-func (am AppModule) EndBlock(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
-	am.keeper.EndBlocker(ctx)
-	return []abci.ValidatorUpdate{}, nil
+func (am AppModule) EndBlock(ctx sdk.Context) error {
+	return am.keeper.EndBlocker(ctx)
 }
 
 // InitGenesis performs genesis initialization for the fee market module. It returns
@@ -180,9 +178,8 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // RegisterStoreDecoder registers a decoder for fee market module's types
-func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
-	// sdr[teyps.StoreKey] = simtypes.NewStoreDecoderFuncFromCollectionsSchema(schema collections.Schema)
-	// TODO(dudong2)
+func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {
+	// sdr[teyps.StoreKey] = simtypes.NewStoreDecoderFuncFromCollectionsSchema(schema collections.Schema) // TODO(dudong2)
 }
 
 // GenerateGenesisState creates a randomized GenState of the fee market module.

@@ -93,7 +93,7 @@ func SetupWithDB(isCheckTx bool, patchGenesis func(*EthermintApp, simapp.Genesis
 		}
 
 		// Initialize the chain
-		app.InitChain(
+		_, err = app.InitChain(
 			&abci.RequestInitChain{
 				ChainId:         ChainID,
 				Validators:      []abci.ValidatorUpdate{},
@@ -101,6 +101,9 @@ func SetupWithDB(isCheckTx bool, patchGenesis func(*EthermintApp, simapp.Genesis
 				AppStateBytes:   stateBytes,
 			},
 		)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return app
@@ -165,7 +168,10 @@ func genesisStateWithValSet(codec codec.Codec, genesisState simapp.GenesisState,
 			MinSelfDelegation: sdkmath.ZeroInt(),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), sdk.ValAddress(val.Address).String(), sdkmath.LegacyOneDec()))
+		delegations = append(
+			delegations,
+			stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), sdk.ValAddress(val.Address).String(), sdkmath.LegacyOneDec()),
+		)
 	}
 	// set validators and delegations
 	stakingGenesis := stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)

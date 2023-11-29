@@ -187,7 +187,8 @@ func (suite *KeeperTestSuite) TestSetGetBlockGasWanted() {
 		{
 			"with last block given",
 			func() {
-				suite.app.FeeMarketKeeper.SetBlockGasWanted(suite.ctx, uint64(1000000))
+				err := suite.app.FeeMarketKeeper.SetBlockGasWanted(suite.ctx, uint64(1000000))
+				suite.Require().NoError(err)
 			},
 			uint64(1000000),
 		},

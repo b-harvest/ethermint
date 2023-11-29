@@ -485,10 +485,7 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, opts Start
 		return err
 	}
 
-	err = startAPIServer(ctx, g, svrCtx.Config, config.Config, clientCtx, svrCtx, app, home, grpcSrv, metrics)
-	if err != nil {
-		return err
-	}
+	startAPIServer(ctx, g, svrCtx.Config, config.Config, clientCtx, svrCtx, app, home, grpcSrv, metrics)
 
 	var (
 		httpSrv     *http.Server
@@ -626,9 +623,9 @@ func startAPIServer(
 	home string,
 	grpcSrv *grpc.Server,
 	metrics *telemetry.Metrics,
-) error {
+) {
 	if !svrCfg.API.Enable {
-		return nil
+		return
 	}
 
 	clientCtx = clientCtx.WithHomeDir(home)
@@ -643,7 +640,6 @@ func startAPIServer(
 	g.Go(func() error {
 		return apiSrv.Start(ctx, svrCfg)
 	})
-	return nil
 }
 
 func startTelemetry(cfg config.Config) (*telemetry.Metrics, error) {

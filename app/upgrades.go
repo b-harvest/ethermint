@@ -45,7 +45,11 @@ import (
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 )
 
-func (app *EthermintApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, clientKeeper clientkeeper.Keeper, consensusParamsKeeper consensusparamskeeper.Keeper) {
+func (app *EthermintApp) RegisterUpgradeHandlers( // TODO(dudong2)
+	cdc codec.BinaryCodec,
+	clientKeeper clientkeeper.Keeper,
+	consensusParamsKeeper consensusparamskeeper.Keeper,
+) {
 	planName := "integration-test-upgrade"
 	// Set param key table for params module migration
 	for _, subspace := range app.ParamsKeeper.GetSubspaces() {
@@ -56,7 +60,7 @@ func (app *EthermintApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, clientKe
 		case banktypes.ModuleName:
 			keyTable = banktypes.ParamKeyTable() //nolint:staticcheck
 		case stakingtypes.ModuleName:
-			keyTable = stakingtypes.ParamKeyTable()
+			keyTable = stakingtypes.ParamKeyTable() //nolint:staticcheck
 		case minttypes.ModuleName:
 			keyTable = minttypes.ParamKeyTable() //nolint:staticcheck
 		case distrtypes.ModuleName:
@@ -82,22 +86,26 @@ func (app *EthermintApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, clientKe
 	}
 
 	baseAppLegacySS := app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
-	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) { // TODO(dudong2)
-		sdkCtx := sdk.UnwrapSDKContext(ctx)
-		// OPTIONAL: prune expired tendermint consensus states to save storage space
-		if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, clientKeeper); err != nil {
-			return nil, err
-		}
-		// explicitly update the IBC 02-client params, adding the localhost client type
-		params := clientKeeper.GetParams(sdkCtx)
-		params.AllowedClients = append(params.AllowedClients, exported.Localhost)
-		clientKeeper.SetParams(sdkCtx, params)
-		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
-		baseapp.MigrateParams(sdkCtx, baseAppLegacySS, consensusParamsKeeper.ParamsStore)
-		c := app.GetConsensusParams(sdkCtx)
-		sdkCtx = sdkCtx.WithConsensusParams(c)
-		return app.mm.RunMigrations(ctx, app.configurator, fromVM)
-	})
+	app.UpgradeKeeper.SetUpgradeHandler( // TODO(dudong2)
+		planName,
+		func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+			sdkCtx := sdk.UnwrapSDKContext(ctx)
+			// OPTIONAL: prune expired tendermint consensus states to save storage space
+			if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, clientKeeper); err != nil {
+				return nil, err
+			}
+			// explicitly update the IBC 02-client params, adding the localhost client type
+			params := clientKeeper.GetParams(sdkCtx)
+			params.AllowedClients = append(params.AllowedClients, exported.Localhost)
+			clientKeeper.SetParams(sdkCtx, params)
+			// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
+			err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, consensusParamsKeeper.ParamsStore)
+			if err != nil {
+				return nil, err
+			}
+			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		},
+	)
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
