@@ -234,7 +234,7 @@ $(STATIK):
 contract-tools:
 ifeq (, $(shell which stringer))
 	@echo "Installing stringer..."
-	@echo "$(go version)"
+	@echo "$(shell go env GOVERSION)"
 	@go get golang.org/x/tools/cmd/stringer
 else
 	@echo "stringer already installed; skipping..."
