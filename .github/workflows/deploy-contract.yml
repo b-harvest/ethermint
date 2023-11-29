@@ -31,10 +31,6 @@ jobs:
             **/**.go
             go.mod
             go.sum
-      - uses: actions/setup-go@v4
-        with:
-          go-version: "1.21"
-          check-latest: true
       - name: Test contract
         run: |
           sudo make contract-tools

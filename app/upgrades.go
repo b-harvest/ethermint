@@ -45,7 +45,7 @@ import (
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 )
 
-func (app *EthermintApp) RegisterUpgradeHandlers( // TODO(dudong2)
+func (app *EthermintApp) RegisterUpgradeHandlers(
 	cdc codec.BinaryCodec,
 	clientKeeper clientkeeper.Keeper,
 	consensusParamsKeeper consensusparamskeeper.Keeper,
@@ -86,7 +86,7 @@ func (app *EthermintApp) RegisterUpgradeHandlers( // TODO(dudong2)
 	}
 
 	baseAppLegacySS := app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
-	app.UpgradeKeeper.SetUpgradeHandler( // TODO(dudong2)
+	app.UpgradeKeeper.SetUpgradeHandler(
 		planName,
 		func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 			sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -110,15 +110,13 @@ func (app *EthermintApp) RegisterUpgradeHandlers( // TODO(dudong2)
 	if err != nil {
 		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
 	}
-	if !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		if upgradeInfo.Name == planName {
-			storeUpgrades := storetypes.StoreUpgrades{
-				Added: []string{
-					consensusparamtypes.StoreKey,
-					crisistypes.StoreKey,
-				},
-			}
-			app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := storetypes.StoreUpgrades{
+			Added: []string{
+				consensusparamtypes.StoreKey,
+				crisistypes.StoreKey,
+			},
 		}
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
 }

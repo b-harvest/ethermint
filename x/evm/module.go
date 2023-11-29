@@ -186,7 +186,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // RegisterStoreDecoder registers a decoder for evm module's types
 func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {
-	// sdr[types.StoreKey] = simtypes.NewStoreDecoderFuncFromCollectionsSchema(am.ak.Schema) // TODO(dudong2)
+	// sdr[types.StoreKey] = simtypes.NewStoreDecoderFuncFromCollectionsSchema(am.ak.Schema)
 }
 
 // GenerateGenesisState creates a randomized GenState of the evm module.

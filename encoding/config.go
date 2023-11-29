@@ -31,8 +31,7 @@ import (
 	feemarketv1 "github.com/evmos/ethermint/api/ethermint/feemarket/v1"
 	enccodec "github.com/evmos/ethermint/encoding/codec"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
-
-	"github.com/ethereum/go-ethereum/common"
+	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 )
 
 // MakeConfig creates an EncodingConfig for testing
@@ -44,88 +43,10 @@ func MakeConfig(mb module.BasicManager) params.EncodingConfig {
 		ValidatorAddressCodec: address.Bech32Codec{Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix()},
 	}
 
-	// evm/MsgEthereumTx, evm/MsgUpdateParams, feemarket/MsgUpdateParams // TODO(dudong2)
-	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgEthereumTx{}), func(msg protov2.Message) ([][]byte, error) {
-		msgEthereumTx, ok := msg.(*evmv1.MsgEthereumTx)
-		if !ok {
-			return nil, nil
-		}
-
-		if len(msgEthereumTx.From) > 0 {
-			return [][]byte{common.HexToAddress(msgEthereumTx.From).Bytes()}, nil
-		}
-
-		var dataAny *types.Any
-		var err error
-		switch msgEthereumTx.Data.TypeUrl {
-		case "/ethermint.evm.v1.LegacyTx":
-			legacyTx := evmtypes.LegacyTx{}
-			evmtypes.ModuleCdc.MustUnmarshal(msgEthereumTx.Data.Value, &legacyTx)
-			dataAny, err = evmtypes.PackTxData(&legacyTx)
-			if err != nil {
-				return nil, err
-			}
-		case "/ethermint.evm.v1.DynamicFeeTx":
-			dynamicFeeTx := evmtypes.DynamicFeeTx{}
-			evmtypes.ModuleCdc.MustUnmarshal(msgEthereumTx.Data.Value, &dynamicFeeTx)
-			dataAny, err = evmtypes.PackTxData(&dynamicFeeTx)
-			if err != nil {
-				return nil, err
-			}
-		case "/ethermint.evm.v1.AccessListTx":
-			accessListTx := evmtypes.AccessListTx{}
-			evmtypes.ModuleCdc.MustUnmarshal(msgEthereumTx.Data.Value, &accessListTx)
-			dataAny, err = evmtypes.PackTxData(&accessListTx)
-			if err != nil {
-				return nil, err
-			}
-		}
-		t := evmtypes.MsgEthereumTx{Data: dataAny}
-		t.Hash = t.AsTransaction().Hash().Hex()
-
-		signers := [][]byte{}
-		for _, signer := range t.GetSigners() {
-			signers = append(signers, signer.Bytes())
-		}
-
-		return signers, nil
-	})
-
-	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgUpdateParams{}), func(msg protov2.Message) ([][]byte, error) {
-		msgUpdateParams, ok := msg.(*evmv1.MsgUpdateParams)
-		if !ok {
-			return nil, nil
-		}
-
-		t := evmtypes.MsgUpdateParams{
-			Authority: msgUpdateParams.Authority,
-		}
-
-		signers := [][]byte{}
-		for _, signer := range t.GetSigners() {
-			signers = append(signers, signer.Bytes())
-		}
-
-		return signers, nil
-	})
-
-	signingOptions.DefineCustomGetSigners(protov2.MessageName(&feemarketv1.MsgUpdateParams{}), func(msg protov2.Message) ([][]byte, error) {
-		msgUpdateParams, ok := msg.(*feemarketv1.MsgUpdateParams)
-		if !ok {
-			return nil, nil
-		}
-
-		t := evmtypes.MsgUpdateParams{
-			Authority: msgUpdateParams.Authority,
-		}
-
-		signers := [][]byte{}
-		for _, signer := range t.GetSigners() {
-			signers = append(signers, signer.Bytes())
-		}
-
-		return signers, nil
-	})
+	// evm/MsgEthereumTx, evm/MsgUpdateParams, feemarket/MsgUpdateParams
+	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgEthereumTx{}), evmtypes.GetSignersFromMsgEthereumTxV2)
+	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgUpdateParams{}), evmtypes.GetSignersFromMsgUpdateParamsV2)
+	signingOptions.DefineCustomGetSigners(protov2.MessageName(&feemarketv1.MsgUpdateParams{}), feemarkettypes.GetSignersFromMsgUpdateParamsV2)
 
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles:     proto.HybridResolver,

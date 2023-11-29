@@ -468,3 +468,71 @@ func (m *MsgUpdateParams) ValidateBasic() error {
 func (m MsgUpdateParams) GetSignBytes() []byte {
 	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(&m))
 }
+
+func GetSignersFromMsgEthereumTxV2(msg protov2.Message) ([][]byte, error) {
+	msgv1, err := GetMsgEthereumTxFromMsgV2(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	signers := [][]byte{}
+	for _, signer := range msgv1.GetSigners() {
+		signers = append(signers, signer.Bytes())
+	}
+
+	return signers, nil
+}
+
+func GetMsgEthereumTxFromMsgV2(msg protov2.Message) (MsgEthereumTx, error) {
+	msgv2, ok := msg.(*evmv1.MsgEthereumTx)
+	if !ok {
+		return MsgEthereumTx{}, nil
+	}
+
+	var dataAny *codectypes.Any
+	var err error
+	switch msgv2.Data.TypeUrl {
+	case "/ethermint.evm.v1.LegacyTx":
+		legacyTx := LegacyTx{}
+		ModuleCdc.MustUnmarshal(msgv2.Data.Value, &legacyTx)
+		dataAny, err = PackTxData(&legacyTx)
+		if err != nil {
+			return MsgEthereumTx{}, err
+		}
+	case "/ethermint.evm.v1.DynamicFeeTx":
+		dynamicFeeTx := DynamicFeeTx{}
+		ModuleCdc.MustUnmarshal(msgv2.Data.Value, &dynamicFeeTx)
+		dataAny, err = PackTxData(&dynamicFeeTx)
+		if err != nil {
+			return MsgEthereumTx{}, err
+		}
+	case "/ethermint.evm.v1.AccessListTx":
+		accessListTx := AccessListTx{}
+		ModuleCdc.MustUnmarshal(msgv2.Data.Value, &accessListTx)
+		dataAny, err = PackTxData(&accessListTx)
+		if err != nil {
+			return MsgEthereumTx{}, err
+		}
+	}
+	msgv1 := MsgEthereumTx{Data: dataAny}
+	msgv1.Hash = msgv1.AsTransaction().Hash().Hex()
+	return msgv1, nil
+}
+
+func GetSignersFromMsgUpdateParamsV2(msg protov2.Message) ([][]byte, error) {
+	msgv2, ok := msg.(*evmv1.MsgUpdateParams)
+	if !ok {
+		return nil, nil
+	}
+
+	msgv1 := MsgUpdateParams{
+		Authority: msgv2.Authority,
+	}
+
+	signers := [][]byte{}
+	for _, signer := range msgv1.GetSigners() {
+		signers = append(signers, signer.Bytes())
+	}
+
+	return signers, nil
+}
