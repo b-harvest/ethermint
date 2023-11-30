@@ -1,6 +1,4 @@
 #!/bin/bash
-export GOPATH=~/go
-export PATH=$PATH:$GOPATH/bin
 
 # remove existing daemon
 rm -rf ~/.ethermintd
