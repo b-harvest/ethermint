@@ -1,4 +1,7 @@
 #!/bin/bash
+export GOROOT=/opt/hostedtoolcache/go/1.21.4/x64
+export GOPATH=~/go
+export PATH=$PATH:$GOPATH/bin
 
 # remove existing daemon
 rm -rf ~/.ethermintd
