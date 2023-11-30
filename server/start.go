@@ -36,7 +36,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	abciserver "github.com/cometbft/cometbft/abci/server"
-	tcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
+	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
@@ -44,6 +44,7 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/client/local"
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	ethmetricsexp "github.com/ethereum/go-ethereum/metrics/exp"
 
@@ -58,6 +59,7 @@ import (
 	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	"github.com/cosmos/cosmos-sdk/server/types"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
 	"github.com/evmos/ethermint/indexer"
 	ethdebug "github.com/evmos/ethermint/rpc/namespaces/ethereum/debug"
@@ -215,7 +217,7 @@ which accepts a path for the resulting pprof file.
 	cmd.Flags().Uint32(server.FlagStateSyncSnapshotKeepRecent, 2, "State sync snapshot to keep")
 
 	// add support for all Tendermint-specific command line options
-	tcmd.AddNodeFlags(cmd)
+	cmtcmd.AddNodeFlags(cmd)
 	return cmd
 }
 
@@ -345,7 +347,14 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, opts Start
 	// listen for quit signals so the calling parent process can gracefully exit
 	server.ListenForQuitSignals(g, true, cancelFn, svrCtx.Logger)
 
-	genDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
+	genDocProvider := func() (*cmttypes.GenesisDoc, error) {
+		appGenesis, err := genutiltypes.AppGenesisFromFile(cfg.GenesisFile())
+		if err != nil {
+			return nil, err
+		}
+
+		return appGenesis.ToGenesisDoc()
+	}
 
 	var (
 		tmNode   *node.Node

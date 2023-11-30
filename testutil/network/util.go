@@ -268,15 +268,17 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 		return err
 	}
 
-	genDoc := types.GenesisDoc{
-		ChainID:    cfg.ChainID,
-		AppState:   appGenStateJSON,
-		Validators: nil,
+	appGenesis := genutiltypes.AppGenesis{
+		ChainID:  cfg.ChainID,
+		AppState: appGenStateJSON,
+		Consensus: &genutiltypes.ConsensusGenesis{
+			Validators: nil,
+		},
 	}
 
 	// generate empty genesis files for each validator and save
 	for i := 0; i < cfg.NumValidators; i++ {
-		if err := genDoc.SaveAs(genFiles[i]); err != nil {
+		if err := appGenesis.SaveAs(genFiles[i]); err != nil {
 			return err
 		}
 	}

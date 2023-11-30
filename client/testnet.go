@@ -29,7 +29,6 @@ import (
 
 	tmconfig "github.com/cometbft/cometbft/config"
 	tmrand "github.com/cometbft/cometbft/libs/rand"
-	"github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
 	"github.com/spf13/cobra"
 
@@ -455,15 +454,10 @@ func initGenFiles(
 		return err
 	}
 
-	genDoc := types.GenesisDoc{
-		ChainID:    chainID,
-		AppState:   appGenStateJSON,
-		Validators: nil,
-	}
-
+	appGenesis := genutiltypes.NewAppGenesisWithVersion(chainID, appGenStateJSON)
 	// generate empty genesis files for each validator and save
 	for i := 0; i < numValidators; i++ {
-		if err := genDoc.SaveAs(genFiles[i]); err != nil {
+		if err := appGenesis.SaveAs(genFiles[i]); err != nil {
 			return err
 		}
 	}
