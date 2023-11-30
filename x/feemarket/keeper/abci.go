@@ -16,6 +16,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/evmos/ethermint/x/feemarket/types"
@@ -26,22 +27,24 @@ import (
 )
 
 // BeginBlock updates base fee
-func (k *Keeper) BeginBlocker(ctx sdk.Context) error {
-	baseFee := k.CalculateBaseFee(ctx)
+func (k *Keeper) BeginBlocker(ctx context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	baseFee := k.CalculateBaseFee(sdkCtx)
 
 	// return immediately if base fee is nil
 	if baseFee == nil {
 		return nil
 	}
 
-	k.SetBaseFee(ctx, baseFee)
+	k.SetBaseFee(sdkCtx, baseFee)
 
 	defer func() {
 		telemetry.SetGauge(float32(baseFee.Int64()), "feemarket", "base_fee")
 	}()
 
 	// Store current base fee in event
-	ctx.EventManager().EmitEvents(sdk.Events{
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeFeeMarket,
 			sdk.NewAttribute(types.AttributeKeyBaseFee, baseFee.String()),
@@ -54,23 +57,25 @@ func (k *Keeper) BeginBlocker(ctx sdk.Context) error {
 // EndBlock update block gas wanted.
 // The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
-func (k *Keeper) EndBlocker(ctx sdk.Context) error {
-	if ctx.BlockGasMeter() == nil {
-		k.Logger(ctx).Error("block gas meter is nil when setting block gas wanted")
+func (k *Keeper) EndBlocker(ctx context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	if sdkCtx.BlockGasMeter() == nil {
+		k.Logger(sdkCtx).Error("block gas meter is nil when setting block gas wanted")
 		return nil
 	}
 
-	gasWanted := k.GetTransientGasWanted(ctx)
-	gasUsed := ctx.BlockGasMeter().GasConsumedToLimit()
+	gasWanted := k.GetTransientGasWanted(sdkCtx)
+	gasUsed := sdkCtx.BlockGasMeter().GasConsumedToLimit()
 
 	// to prevent BaseFee manipulation we limit the gasWanted so that
 	// gasWanted = max(gasWanted * MinGasMultiplier, gasUsed)
 	// this will be keep BaseFee protected from un-penalized manipulation
 	// more info here https://github.com/evmos/ethermint/pull/1105#discussion_r888798925
-	minGasMultiplier := k.GetParams(ctx).MinGasMultiplier
+	minGasMultiplier := k.GetParams(sdkCtx).MinGasMultiplier
 	limitedGasWanted := math.LegacyNewDec(int64(gasWanted)).Mul(minGasMultiplier)
 	gasWanted = math.LegacyMaxDec(limitedGasWanted, math.LegacyNewDec(int64(gasUsed))).TruncateInt().Uint64()
-	err := k.SetBlockGasWanted(ctx, gasWanted)
+	err := k.SetBlockGasWanted(sdkCtx, gasWanted)
 	if err != nil {
 		return err
 	}
@@ -79,9 +84,9 @@ func (k *Keeper) EndBlocker(ctx sdk.Context) error {
 		telemetry.SetGauge(float32(gasWanted), "feemarket", "block_gas")
 	}()
 
-	ctx.EventManager().EmitEvent(sdk.NewEvent(
+	sdkCtx.EventManager().EmitEvent(sdk.NewEvent(
 		"block_gas",
-		sdk.NewAttribute("height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		sdk.NewAttribute("height", fmt.Sprintf("%d", sdkCtx.BlockHeight())),
 		sdk.NewAttribute("amount", fmt.Sprintf("%d", gasWanted)),
 	))
 

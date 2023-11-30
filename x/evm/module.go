@@ -158,13 +158,13 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 // BeginBlock returns the begin block for the evm module.
-func (am AppModule) BeginBlock(ctx sdk.Context) error {
+func (am AppModule) BeginBlock(ctx context.Context) error {
 	return am.keeper.BeginBlock(ctx)
 }
 
 // EndBlock returns the end blocker for the evm module. It returns no validator
 // updates.
-func (am AppModule) EndBlock(ctx sdk.Context) error {
+func (am AppModule) EndBlock(ctx context.Context) error {
 	return am.keeper.EndBlock(ctx)
 }
 
