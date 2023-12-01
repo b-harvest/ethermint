@@ -23,9 +23,9 @@ jobs:
       - name: check go version
         run: |
           go version
-          sudo -E go version
+          sudo env "PATH=$PATH" go version
           go env
-          sudo -E go env
+          sudo env "PATH=$PATH" go env
       - uses: actions/checkout@v3
       - name: Use Node.js
         uses: actions/setup-node@v3
