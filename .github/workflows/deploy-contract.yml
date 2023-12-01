@@ -37,11 +37,8 @@ jobs:
             **/**.go
             go.mod
             go.sum
-      - name: tttt
-        run: go env
       - name: Test contract
         run: |
-          go env
           sudo make contract-tools
           sudo make test-solidity
         if: env.GIT_DIFF
