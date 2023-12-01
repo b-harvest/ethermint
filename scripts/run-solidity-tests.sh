@@ -5,8 +5,6 @@ export PATH=$PATH:$GOPATH/bin
 # remove existing daemon
 rm -rf ~/.ethermintd
 
-go version
-
 # build ethermint binary
 make install
 

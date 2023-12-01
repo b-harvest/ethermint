@@ -28,7 +28,6 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          go env
       - uses: technote-space/get-diff-action@v6.1.2
         id: git_diff
         with:
@@ -39,6 +38,10 @@ jobs:
             go.sum
       - name: Test contract
         run: |
+          sudo go version
           sudo make contract-tools
+      - name: Test contract2
+        run: |
+          sudo go version
           sudo make test-solidity
         if: env.GIT_DIFF
