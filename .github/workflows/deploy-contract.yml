@@ -20,12 +20,6 @@ jobs:
         with:
           go-version: "1.21"
           check-latest: true
-      - name: check go version
-        run: |
-          go version
-          sudo env "PATH=$PATH" go version
-          go env
-          sudo env "PATH=$PATH" go env
       - uses: actions/checkout@v3
       - name: Use Node.js
         uses: actions/setup-node@v3
@@ -33,13 +27,7 @@ jobs:
           node-version: '12.x'
       - name: Install dependencies
         run: |
-          go version
-          sudo -E go version
           npm install
-          go version
-          sudo -E go version
-          go env
-          sudo -E go env
       - uses: technote-space/get-diff-action@v6.1.2
         id: git_diff
         with:
@@ -50,16 +38,8 @@ jobs:
             go.sum
       - name: Test contract
         run: |
-          go version
-          sudo -E go version
-          go env
-          sudo -E go env
-          sudo -E make contract-tools
-      - name: Test contract2
-        run: |
-          go version
-          sudo -E go version
-          go env
-          sudo -E go env
-          sudo -E make test-solidity
+          sudo env "PATH=$PATH" go version
+          sudo env "PATH=$PATH" go env
+          sudo env "PATH=$PATH" make contract-tools
+          sudo env "PATH=$PATH" make test-solidity
         if: env.GIT_DIFF
