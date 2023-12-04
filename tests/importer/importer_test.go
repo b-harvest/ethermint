@@ -161,7 +161,9 @@ func (suite *ImporterTestSuite) TestImportBlocks() {
 		accumulateRewards(chainConfig, vmdb, header, block.Uncles())
 
 		// simulate BaseApp EndBlocker commitment
-		suite.app.EndBlocker(ctx.WithBlockHeight(tmheader.Height))
+		suite.app.FinalizeBlock(&types.RequestFinalizeBlock{
+			Height: tmheader.Height,
+		})
 		suite.app.Commit()
 
 		// block debugging output
