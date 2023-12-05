@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil"
 	"github.com/stretchr/testify/require"
 
-	"github.com/evmos/ethermint/app"
 	"github.com/evmos/ethermint/encoding"
 	v5 "github.com/evmos/ethermint/x/evm/migrations/v5"
 	v5types "github.com/evmos/ethermint/x/evm/migrations/v5/types"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestMigrate(t *testing.T) {
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
+	encCfg := encoding.MakeTestEncodingConfig()
 	cdc := encCfg.Codec
 
 	storeKey := storetypes.NewKVStoreKey(types.ModuleName)

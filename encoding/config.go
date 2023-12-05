@@ -34,8 +34,8 @@ import (
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 )
 
-// MakeConfig creates an EncodingConfig for testing
-func MakeConfig(mb module.BasicManager) params.EncodingConfig {
+// MakeTestEncodingConfig creates an EncodingConfig for testing
+func MakeTestEncodingConfig(modules ...module.AppModuleBasic) params.EncodingConfig {
 	cdc := amino.NewLegacyAmino()
 
 	signingOptions := signing.Options{
@@ -60,6 +60,8 @@ func MakeConfig(mb module.BasicManager) params.EncodingConfig {
 		TxConfig:          tx.NewTxConfig(codec, tx.DefaultSignModes),
 		Amino:             cdc,
 	}
+
+	mb := module.NewBasicManager(modules...)
 
 	enccodec.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	mb.RegisterLegacyAminoCodec(encodingConfig.Amino)

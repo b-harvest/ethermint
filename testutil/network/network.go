@@ -66,7 +66,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/evmos/ethermint/crypto/hd"
-	"github.com/evmos/ethermint/encoding"
 	"github.com/evmos/ethermint/server/config"
 	ethermint "github.com/evmos/ethermint/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
@@ -93,7 +92,6 @@ func NewAppConstructor(encodingCfg params.EncodingConfig, chainID string) AppCon
 			make(map[int64]bool),
 			val.Ctx.Config.RootDir,
 			0,
-			encodingCfg,
 			simtestutil.NewAppOptionsWithFlagHome(val.Ctx.Config.RootDir),
 			baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 			baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
@@ -135,7 +133,24 @@ type Config struct {
 // DefaultConfig returns a sane default configuration suitable for nearly all
 // testing requirements.
 func DefaultConfig() Config {
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
+	tempApp := app.NewEthermintApp(
+		log.NewNopLogger(),
+		dbm.NewMemDB(),
+		nil,
+		true,
+		map[int64]bool{},
+		app.DefaultNodeHome,
+		0,
+		simtestutil.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
+	)
+
+	encCfg := params.EncodingConfig{
+		InterfaceRegistry: tempApp.InterfaceRegistry(),
+		Codec:             tempApp.AppCodec(),
+		TxConfig:          tempApp.TxConfig(),
+		Amino:             tempApp.LegacyAmino(),
+	}
+
 	chainID := fmt.Sprintf("ethermint_%d-1", tmrand.Int63n(9999999999999)+1)
 	return Config{
 		Codec:             encCfg.Codec,
@@ -144,7 +159,7 @@ func DefaultConfig() Config {
 		InterfaceRegistry: encCfg.InterfaceRegistry,
 		AccountRetriever:  authtypes.AccountRetriever{},
 		AppConstructor:    NewAppConstructor(encCfg, chainID),
-		GenesisState:      app.ModuleBasics.DefaultGenesis(encCfg.Codec),
+		GenesisState:      tempApp.DefaultGenesis(),
 		TimeoutCommit:     2 * time.Second,
 		ChainID:           fmt.Sprintf("ethermint_%d-1", tmrand.Int63n(9999999999999)+1),
 		NumValidators:     4,

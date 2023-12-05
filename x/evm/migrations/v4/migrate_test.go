@@ -10,7 +10,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/evmos/ethermint/app"
 	"github.com/evmos/ethermint/encoding"
 	v4 "github.com/evmos/ethermint/x/evm/migrations/v4"
 	v4types "github.com/evmos/ethermint/x/evm/migrations/v4/types"
@@ -29,7 +28,7 @@ func (ms mockSubspace) GetParamSetIfExists(ctx sdk.Context, ps types.LegacyParam
 }
 
 func TestMigrate(t *testing.T) {
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
+	encCfg := encoding.MakeTestEncodingConfig()
 	cdc := encCfg.Codec
 
 	storeKey := storetypes.NewKVStoreKey(types.ModuleName)

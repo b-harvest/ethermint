@@ -53,7 +53,6 @@ import (
 	"cosmossdk.io/x/feegrant"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdktestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -139,7 +138,7 @@ func (suite *AnteTestSuite) SetupTest() {
 	acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr)
 	suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := encoding.MakeTestEncodingConfig(auth.AppModuleBasic{}, authzmodule.AppModuleBasic{}, bank.AppModuleBasic{}, evidence.AppModuleBasic{}, evm.AppModuleBasic{}, feegrantmodule.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
 	// We're using TestMsg amino encoding in some tests, so register it here.
 	encodingConfig.Amino.RegisterConcrete(&testdata.TestMsg{}, "testdata.TestMsg", nil)
 	eip712.SetEncodingConfig(encodingConfig)
@@ -180,8 +179,7 @@ func (suite *AnteTestSuite) SetupTest() {
 	suite.ctx, err = testutil.Commit(suite.ctx, suite.app, time.Second*0, nil)
 	suite.Require().NoError(err)
 
-	encCfg := sdktestutil.MakeTestEncodingConfig(auth.AppModuleBasic{}, authzmodule.AppModuleBasic{}, bank.AppModuleBasic{}, evidence.AppModuleBasic{}, evm.AppModuleBasic{}, feegrantmodule.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
-	legacytx.RegressionTestingAminoCodec = encCfg.Amino
+	legacytx.RegressionTestingAminoCodec = encodingConfig.Amino
 }
 
 func (s *AnteTestSuite) BuildTestEthTx(

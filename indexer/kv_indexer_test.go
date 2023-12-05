@@ -12,11 +12,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/evmos/ethermint/app"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	evmenc "github.com/evmos/ethermint/encoding"
 	"github.com/evmos/ethermint/indexer"
 	"github.com/evmos/ethermint/tests"
+	"github.com/evmos/ethermint/x/evm"
 	"github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/require"
 )
@@ -197,5 +197,5 @@ func TestKVIndexer(t *testing.T) {
 
 // MakeEncodingConfig creates the EncodingConfig
 func MakeEncodingConfig() params.EncodingConfig {
-	return evmenc.MakeConfig(app.ModuleBasics)
+	return evmenc.MakeTestEncodingConfig(evm.AppModuleBasic{})
 }

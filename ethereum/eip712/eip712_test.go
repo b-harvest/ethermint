@@ -27,23 +27,16 @@ import (
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	// banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/evmos/ethermint/app"
 	"github.com/evmos/ethermint/cmd/config"
 	"github.com/evmos/ethermint/encoding"
 	"github.com/evmos/ethermint/testutil"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	sdktestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
-	// distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
-	// govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	// govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/staking"
-	// stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -81,15 +74,14 @@ func TestEIP712TestSuite(t *testing.T) {
 }
 
 func (suite *EIP712TestSuite) SetupTest() {
-	suite.config = encoding.MakeConfig(app.ModuleBasics)
+	suite.config = encoding.MakeTestEncodingConfig(bank.AppModuleBasic{}, distribution.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
 	suite.clientCtx = client.Context{}.WithTxConfig(suite.config.TxConfig)
 	suite.denom = evmtypes.DefaultEVMDenom
 
 	sdk.GetConfig().SetBech32PrefixForAccount(config.Bech32Prefix, "")
 	eip712.SetEncodingConfig(suite.config)
 
-	encCfg := sdktestutil.MakeTestEncodingConfig(bank.AppModuleBasic{}, distribution.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
-	legacytx.RegressionTestingAminoCodec = encCfg.Amino
+	legacytx.RegressionTestingAminoCodec = suite.config.Amino
 }
 
 // createTestAddress creates random test addresses for messages

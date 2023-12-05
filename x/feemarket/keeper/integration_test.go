@@ -22,7 +22,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/ethermint/app"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	"github.com/evmos/ethermint/encoding"
 	"github.com/evmos/ethermint/tests"
 	"github.com/evmos/ethermint/testutil"
 	"github.com/evmos/ethermint/x/feemarket/types"
@@ -492,7 +491,6 @@ func setupChain(localMinGasPricesStr string) {
 		map[int64]bool{},
 		app.DefaultNodeHome,
 		5,
-		encoding.MakeConfig(app.ModuleBasics),
 		simtestutil.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
 		baseapp.SetMinGasPrices(localMinGasPricesStr),
 		baseapp.SetChainID(app.ChainID),
@@ -560,11 +558,11 @@ func buildEthTx(
 }
 
 func prepareEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereumTx) []byte {
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	txConfig := s.app.TxConfig()
 	option, err := codectypes.NewAnyWithValue(&evmtypes.ExtensionOptionsEthereumTx{})
 	s.Require().NoError(err)
 
-	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
+	txBuilder := txConfig.NewTxBuilder()
 	builder, ok := txBuilder.(authtx.ExtensionOptionsTxBuilder)
 	s.Require().True(ok)
 	builder.SetExtensionOptions(option)
@@ -585,7 +583,7 @@ func prepareEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereu
 	builder.SetGasLimit(msgEthereumTx.GetGas())
 
 	// bz are bytes to be broadcasted over the network
-	bz, err := encodingConfig.TxConfig.TxEncoder()(txBuilder.GetTx())
+	bz, err := txConfig.TxEncoder()(txBuilder.GetTx())
 	s.Require().NoError(err)
 
 	return bz
@@ -610,10 +608,10 @@ func finalizeEthBlock(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEth
 }
 
 func prepareCosmosTx(priv *ethsecp256k1.PrivKey, gasPrice *sdkmath.Int, msgs ...sdk.Msg) []byte {
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	txConfig := s.app.TxConfig()
 	accountAddress := sdk.AccAddress(priv.PubKey().Address().Bytes())
 
-	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
+	txBuilder := txConfig.NewTxBuilder()
 
 	txBuilder.SetGasLimit(1000000)
 	if gasPrice == nil {
@@ -628,7 +626,7 @@ func prepareCosmosTx(priv *ethsecp256k1.PrivKey, gasPrice *sdkmath.Int, msgs ...
 	seq, err := s.app.AccountKeeper.GetSequence(s.ctx, accountAddress)
 	s.Require().NoError(err)
 
-	defaultSignMode, err := authsigning.APISignModeToInternal(encodingConfig.TxConfig.SignModeHandler().DefaultMode())
+	defaultSignMode, err := authsigning.APISignModeToInternal(txConfig.SignModeHandler().DefaultMode())
 	s.Require().NoError(err)
 
 	// First round: we gather all the signer infos. We use the "set empty
@@ -658,7 +656,7 @@ func prepareCosmosTx(priv *ethsecp256k1.PrivKey, gasPrice *sdkmath.Int, msgs ...
 	sigV2, err = tx.SignWithPrivKey(
 		context.TODO(),
 		defaultSignMode, signerData,
-		txBuilder, priv, encodingConfig.TxConfig,
+		txBuilder, priv, txConfig,
 		seq,
 	)
 	s.Require().NoError(err)
@@ -668,7 +666,7 @@ func prepareCosmosTx(priv *ethsecp256k1.PrivKey, gasPrice *sdkmath.Int, msgs ...
 	s.Require().NoError(err)
 
 	// bz are bytes to be broadcasted over the network
-	bz, err := encodingConfig.TxConfig.TxEncoder()(txBuilder.GetTx())
+	bz, err := txConfig.TxEncoder()(txBuilder.GetTx())
 	s.Require().NoError(err)
 	return bz
 }

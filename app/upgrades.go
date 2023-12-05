@@ -103,7 +103,7 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 			if err != nil {
 				return nil, err
 			}
-			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+			return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		},
 	)
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()

@@ -30,7 +30,6 @@ import (
 
 	"github.com/evmos/ethermint/app"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	"github.com/evmos/ethermint/encoding"
 	"github.com/evmos/ethermint/server/config"
 	"github.com/evmos/ethermint/tests"
 	ethermint "github.com/evmos/ethermint/types"
@@ -223,10 +222,9 @@ func (suite *KeeperTestSuite) SetupAppWithT(checkTx bool, t require.TestingT) {
 	require.NoError(t, err)
 	suite.app.StakingKeeper.SetValidator(suite.ctx, validator)
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
-	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
+	suite.clientCtx = client.Context{}.WithTxConfig(suite.app.TxConfig())
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
-	suite.appCodec = encodingConfig.Codec
+	suite.appCodec = suite.app.AppCodec()
 	suite.denom = evmtypes.DefaultEVMDenom
 }
 

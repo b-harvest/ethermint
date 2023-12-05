@@ -11,7 +11,6 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/evmos/ethermint/encoding"
@@ -52,7 +51,7 @@ func TestSDKTxFeeChecker(t *testing.T) {
 	//      with extension option
 	//      without extension option
 	//      london hardfork enableness
-	encodingConfig := encoding.MakeConfig(module.NewBasicManager())
+	encodingConfig := encoding.MakeTestEncodingConfig()
 	minGasPrices := sdk.NewDecCoins(sdk.NewDecCoin("aphoton", sdkmath.NewInt(10)))
 
 	genesisCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
