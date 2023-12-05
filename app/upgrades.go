@@ -74,7 +74,7 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 		case ibctransfertypes.ModuleName:
 			keyTable = ibctransfertypes.ParamKeyTable()
 		case evmtypes.ModuleName:
-			keyTable = evmtypes.ParamKeyTable()
+			keyTable = evmtypes.ParamKeyTable() //nolint:staticcheck
 		case feemarkettypes.ModuleName:
 			keyTable = feemarkettypes.ParamKeyTable()
 		default:
