@@ -266,8 +266,7 @@ func txCommand() *cobra.Command {
 	return cmd
 }
 
-type appCreator struct {
-}
+type appCreator struct{}
 
 // newApp is an appCreator
 func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
