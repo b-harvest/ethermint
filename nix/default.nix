@@ -3,11 +3,11 @@
 import sources.nixpkgs {
   overlays = [
     (_: pkgs: {
-      go = pkgs.go_1_18;
+      go = pkgs.go_1_21;
       go-ethereum = pkgs.callPackage ./go-ethereum.nix {
         inherit (pkgs.darwin) libobjc;
         inherit (pkgs.darwin.apple_sdk.frameworks) IOKit;
-        buildGoModule = pkgs.buildGo118Module;
+        buildGoModule = pkgs.buildGo121Module;
       };
     }) # update to a version that supports eip-1559
     # https://github.com/NixOS/nixpkgs/pull/179622
