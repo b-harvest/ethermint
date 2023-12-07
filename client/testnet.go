@@ -496,7 +496,8 @@ func collectGenFiles(
 			appGenesis,
 			genBalIterator,
 			genutiltypes.DefaultMessageValidator,
-			valAddrCodec)
+			valAddrCodec,
+		)
 		if err != nil {
 			return err
 		}
