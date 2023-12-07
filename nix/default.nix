@@ -11,7 +11,7 @@ import sources.nixpkgs {
       };
     }) # update to a version that supports eip-1559
     # https://github.com/NixOS/nixpkgs/pull/179622
-    (import ./go_1_18_overlay.nix)
+    (import ./go_1_21_overlay.nix)
     (final: prev:
       (import "${sources.gomod2nix}/overlay.nix")
         (final // {
