@@ -5,10 +5,10 @@
         "homepage": "https://cosmos.network/",
         "owner": "cosmos",
         "repo": "cosmos-sdk",
-        "rev": "b6c77e6c819f8a51166649eaef125d1bfb276f04",
-        "sha256": "09ns4yfxyfi7c7n5g69zv32m1rdssdl48c1akmv1y2vz6ayz4v02",
+        "rev": "f6df368d8d45573b99067f0ba87b6d3a5c53128c",
+        "sha256": "061dg0q50w8n6avsiywj0rzbcrawng5jfbmw4flpl16hnrw0rq35",
         "type": "tarball",
-        "url": "https://github.com/cosmos/cosmos-sdk/archive/b6c77e6c819f8a51166649eaef125d1bfb276f04.tar.gz",
+        "url": "https://github.com/cosmos/cosmos-sdk/archive/f6df368d8d45573b99067f0ba87b6d3a5c53128c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "gomod2nix": {
@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "tweag",
         "repo": "gomod2nix",
-        "rev": "40d32f82fc60d66402eb0972e6e368aeab3faf58",
-        "sha256": "0li17ynbg2wg0xqy655m5rmcw905sbv7d4ir35z7s5pg1yhhzxkp",
+        "rev": "001bbfa22e2adeb87c34c6015e5694e88721cabe",
+        "sha256": "1nnfw9366az79skmfqfmxv3789wqgf2xmi9k734qjplnhb28r458",
         "type": "tarball",
-        "url": "https://github.com/tweag/gomod2nix/archive/40d32f82fc60d66402eb0972e6e368aeab3faf58.tar.gz",
+        "url": "https://github.com/tweag/gomod2nix/archive/001bbfa22e2adeb87c34c6015e5694e88721cabe.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
@@ -29,10 +29,10 @@
         "homepage": "https://github.com/nmattia/niv",
         "owner": "nmattia",
         "repo": "niv",
-        "rev": "e0ca65c81a2d7a4d82a189f1e23a48d59ad42070",
-        "sha256": "1pq9nh1d8nn3xvbdny8fafzw87mj7gsmp6pxkdl65w2g18rmcmzx",
+        "rev": "6bd7cd686220bf3db0e212481faf9578e8c8ff0f",
+        "sha256": "15claxlj6y15db67qc7kb4vzyn6sv7r13z4q502vq7a4z2488z94",
         "type": "tarball",
-        "url": "https://github.com/nmattia/niv/archive/e0ca65c81a2d7a4d82a189f1e23a48d59ad42070.tar.gz",
+        "url": "https://github.com/nmattia/niv/archive/6bd7cd686220bf3db0e212481faf9578e8c8ff0f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
@@ -41,10 +41,22 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ea2c6a6dda1aa35a80139a512a9dee375b0946e7",
-        "sha256": "0nd4nn9ryqa80ssw3j2kmr8wa73p2xz1hyxp280cdzqlmdfgw1lm",
+        "rev": "f63903a90faf6cce169eb2bcc93fb45c457b1d31",
+        "sha256": "14is4h0wxq8is80vcjiakl4zn5zkb8w9wd7my30r1qf660smfii7",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/ea2c6a6dda1aa35a80139a512a9dee375b0946e7.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/f63903a90faf6cce169eb2bcc93fb45c457b1d31.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "poetry2nix": {
+        "branch": "master",
+        "description": "Convert poetry projects to nix automagically [maintainer=@adisbladis] ",
+        "homepage": "",
+        "owner": "nix-community",
+        "repo": "poetry2nix",
+        "rev": "dded87ea03726eab238267b92fe5723f808722cc",
+        "sha256": "1hbrmzmd5my2ygkpppji9gl8dl7hag9zldgp9xvhrf2qzy6y76i5",
+        "type": "tarball",
+        "url": "https://github.com/nix-community/poetry2nix/archive/dded87ea03726eab238267b92fe5723f808722cc.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

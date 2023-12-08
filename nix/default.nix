@@ -27,7 +27,10 @@ import sources.nixpkgs {
           dotenv = builtins.path { name = "dotenv"; path = ../scripts/.env; };
         };
       })
-    (_: pkgs: { test-env = pkgs.callPackage ./testenv.nix { }; })
+    (_: pkgs: { 
+      poetry2nix = pkgs.callPackage (sources.poetry2nix + "/default.nix") {};
+      test-env = pkgs.callPackage ./testenv.nix {}; 
+    })
     (_: pkgs: {
       cosmovisor = pkgs.buildGo118Module rec {
         name = "cosmovisor";
