@@ -24,7 +24,7 @@ import sources.nixpkgs {
         config = {
           ethermint-config = ../scripts/ethermint-devnet.yaml;
           geth-genesis = ../scripts/geth-genesis.json;
-          dotenv = builtins.path { name = "dotenv"; path = ../scripts/.env; };
+          dotenv = builtins.path { name = "dotenv"; path = ../scripts/env; };
         };
       })
     (_: pkgs: { 
@@ -34,9 +34,9 @@ import sources.nixpkgs {
     (_: pkgs: {
       cosmovisor = pkgs.buildGo121Module rec {
         name = "cosmovisor";
-        src = sources.cosmos-sdk + "/cosmovisor";
+        src = sources.cosmos-sdk + "/tools/cosmovisor";
         subPackages = [ "./cmd/cosmovisor" ];
-        vendorSha256 = "sha256-OAXWrwpartjgSP7oeNvDJ7cTR9lyYVNhEM8HUnv3acE=";
+        vendorHash = "sha256-ZACVsWHyyBS9EP4hsz6nLMUb6XCgIEryQYgvbpLDEgg=";
         doCheck = false;
       };
     })
