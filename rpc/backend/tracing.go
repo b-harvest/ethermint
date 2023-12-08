@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	rpctypes "github.com/evmos/ethermint/rpc/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
@@ -77,11 +78,12 @@ func (b *Backend) TraceTransaction(hash common.Hash, config *evmtypes.TraceConfi
 	}
 
 	traceTxRequest := evmtypes.QueryTraceTxRequest{
-		Msg:          ethMessage,
-		Predecessors: predecessors,
-		BlockNumber:  blk.Block.Height,
-		BlockTime:    blk.Block.Time,
-		BlockHash:    common.Bytes2Hex(blk.BlockID.Hash),
+		Msg:             ethMessage,
+		Predecessors:    predecessors,
+		BlockNumber:     blk.Block.Height,
+		BlockTime:       blk.Block.Time,
+		BlockHash:       common.Bytes2Hex(blk.BlockID.Hash),
+		ProposerAddress: sdk.ConsAddress(blk.Block.ProposerAddress),
 	}
 
 	if config != nil {
@@ -151,11 +153,12 @@ func (b *Backend) TraceBlock(height rpctypes.BlockNumber, config *evmtypes.Trace
 	ctxWithHeight := rpctypes.ContextWithHeight(int64(contextHeight))
 
 	traceBlockRequest := &evmtypes.QueryTraceBlockRequest{
-		Txs:         txsMessages,
-		TraceConfig: config,
-		BlockNumber: block.Block.Height,
-		BlockTime:   block.Block.Time,
-		BlockHash:   common.Bytes2Hex(block.BlockID.Hash),
+		Txs:             txsMessages,
+		TraceConfig:     config,
+		BlockNumber:     block.Block.Height,
+		BlockTime:       block.Block.Time,
+		BlockHash:       common.Bytes2Hex(block.BlockID.Hash),
+		ProposerAddress: sdk.ConsAddress(block.Block.ProposerAddress),
 	}
 
 	res, err := b.queryClient.TraceBlock(ctxWithHeight, traceBlockRequest)
