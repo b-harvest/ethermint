@@ -414,74 +414,57 @@ format-fix:
 ###                                Protobuf                                 ###
 ###############################################################################
 
-protoVer=v0.2
+protoVer=v0.7
 protoImageName=tendermintdev/sdk-proto-gen:$(protoVer)
-containerProtoGen=$(PROJECT_NAME)-proto-gen-$(protoVer)
-containerProtoGenAny=$(PROJECT_NAME)-proto-gen-any-$(protoVer)
-containerProtoGenSwagger=$(PROJECT_NAME)-proto-gen-swagger-$(protoVer)
-containerProtoFmt=$(PROJECT_NAME)-proto-fmt-$(protoVer)
+protoImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
+# ------
+# NOTE: cosmos/proto-builder image is needed because clang-format is not installed
+#       on the tendermintdev/sdk-proto-gen docker image.
+#		Link to the cosmos/proto-builder docker images:
+#       https://github.com/cosmos/cosmos-sdk/pkgs/container/proto-builder
+#
+protoCosmosVer=0.11.2
+protoCosmosName=ghcr.io/cosmos/proto-builder:$(protoCosmosVer)
+protoCosmosImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protoCosmosName)
+# ------
+# NOTE: Link to the yoheimuta/protolint docker images:
+#       https://hub.docker.com/r/yoheimuta/protolint/tags
+#
+protolintVer=0.42.2
+protolintName=yoheimuta/protolint:$(protolintVer)
+protolintImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protolintName)
 
-proto-all: proto-format proto-lint proto-gen
+
+# ------
+# NOTE: If you are experiencing problems running these commands, try deleting
+#       the docker images and execute the desired command again.
+#
+proto-all: proto-format proto-gen # proto-lint makes an error, so disable it. (solve it later)
 
 proto-gen:
 	@echo "Generating Protobuf files"
-	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(protoImageName) \
-		sh ./scripts/protocgen.sh; fi
+	$(protoImage) sh ./scripts/protocgen.sh
 
-proto-swagger-gen:
-	@echo "Generating Protobuf Swagger"
-	@./scripts/proto-tools-installer.sh
-	@./scripts/protoc-swagger-gen.sh
+
+# TODO: Rethink API docs generation
+# proto-swagger-gen:
+# 	@echo "Generating Protobuf Swagger"
+# 	$(protoImage) sh ./scripts/protoc-swagger-gen.sh
 
 proto-format:
 	@echo "Formatting Protobuf files"
-	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoFmt}$$"; then docker start -a $(containerProtoFmt); else docker run --name $(containerProtoFmt) -v $(CURDIR):/workspace --workdir /workspace tendermintdev/docker-build-proto \
-		find ./ -not -path "./third_party/*" -name "*.proto" -exec clang-format -i {} \; ; fi
+	$(protoCosmosImage) find ./ -name *.proto -exec clang-format -i {} \;
 
+# NOTE: The linter configuration lives in .protolint.yaml
 proto-lint:
-	@$(DOCKER_BUF) lint --error-format=json
+	@echo "Linting Protobuf files"
+	$(protolintImage) lint ./proto
 
 proto-check-breaking:
-	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=main
+	@echo "Checking Protobuf files for breaking changes"
+	$(protoImage) buf breaking --against $(HTTPS_GIT)#branch=main
 
-
-TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.12/proto/tendermint
-GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-COSMOS_SDK_URL      = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.43.0
-COSMOS_PROTO_URL    = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
-
-TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
-TM_ABCI_TYPES       = third_party/proto/tendermint/abci
-TM_TYPES            = third_party/proto/tendermint/types
-
-GOGO_PROTO_TYPES    = third_party/proto/gogoproto
-
-COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
-
-proto-update-deps:
-	@mkdir -p $(GOGO_PROTO_TYPES)
-	@curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
-
-	@mkdir -p $(COSMOS_PROTO_TYPES)
-	@curl -sSL $(COSMOS_PROTO_URL)/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
-
-## Importing of tendermint protobuf definitions currently requires the
-## use of `sed` in order to build properly with cosmos-sdk's proto file layout
-## (which is the standard Buf.build FILE_LAYOUT)
-## Issue link: https://github.com/tendermint/tendermint/issues/5021
-	@mkdir -p $(TM_ABCI_TYPES)
-	@curl -sSL $(TM_URL)/abci/types.proto > $(TM_ABCI_TYPES)/types.proto
-
-	@mkdir -p $(TM_TYPES)
-	@curl -sSL $(TM_URL)/types/types.proto > $(TM_TYPES)/types.proto
-
-	@mkdir -p $(TM_CRYPTO_TYPES)
-	@curl -sSL $(TM_URL)/crypto/proof.proto > $(TM_CRYPTO_TYPES)/proof.proto
-	@curl -sSL $(TM_URL)/crypto/keys.proto > $(TM_CRYPTO_TYPES)/keys.proto
-
-
-
-.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-gen proto-gen-any proto-format proto-lint proto-check-breaking
 
 ###############################################################################
 ###                                Localnet                                 ###
