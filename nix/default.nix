@@ -32,7 +32,7 @@ import sources.nixpkgs {
       test-env = pkgs.callPackage ./testenv.nix {}; 
     })
     (_: pkgs: {
-      cosmovisor = pkgs.buildGo118Module rec {
+      cosmovisor = pkgs.buildGo121Module rec {
         name = "cosmovisor";
         src = sources.cosmos-sdk + "/cosmovisor";
         subPackages = [ "./cmd/cosmovisor" ];
