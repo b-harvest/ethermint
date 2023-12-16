@@ -446,11 +446,20 @@ var _ = Describe("Feemarket", func() {
 // given a local (validator config) and a gloabl (feemarket param) minGasPrice
 func setupTestWithContext(valMinGasPrice string, minGasPrice sdkmath.LegacyDec, baseFee sdkmath.Int) (*ethsecp256k1.PrivKey, banktypes.MsgSend) {
 	privKey, msg := setupTest(valMinGasPrice + s.denom)
+	// The BeginBlock, DeliverTx, and EndBlock logic has been combined into a single FinalizeBlock logic.
+	// Because the SetBaseFee is called in BeginBlock and Commit synchronizes the check state with
+	// the finalize state being committed, the SetBaseFee call in setupTestWithContext becomes meaningless.
+	// Therefore, s.Commit() should not be called. Also, for tests that use FinalizeEthBlock,
+	// we explicitly change it to call SetBaseFee in the finalize state as well.
 	params := types.DefaultParams()
 	params.MinGasPrice = minGasPrice
+	header := s.ctx.BlockHeader()
+	s.ctx = s.app.NewContextLegacy(true, header)
 	s.app.FeeMarketKeeper.SetParams(s.ctx, params)
 	s.app.FeeMarketKeeper.SetBaseFee(s.ctx, baseFee.BigInt())
-	s.Commit()
+	s.ctx = s.app.NewContextLegacy(false, header)
+	s.app.FeeMarketKeeper.SetParams(s.ctx, params)
+	s.app.FeeMarketKeeper.SetBaseFee(s.ctx, baseFee.BigInt())
 
 	return privKey, msg
 }

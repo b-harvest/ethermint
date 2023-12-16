@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethparams "github.com/ethereum/go-ethereum/params"
 
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	sdkmath "cosmossdk.io/math"
@@ -178,6 +179,12 @@ func (suite *AnteTestSuite) SetupTest() {
 	suite.ctx = suite.ctx.WithBlockHeight(header.Height - 1)
 	suite.ctx, err = testutil.Commit(suite.ctx, suite.app, time.Second*0, nil)
 	suite.Require().NoError(err)
+
+	// The BeginBlock, DeliverTx, and EndBlock logic has been combined into one FinalizeBlock logic.
+	// Compared to the old logic, the BaseFee has changed because testutil.commit() returns a
+	// ctx in the state in which BeginBlock was called, so we force it to be set to the
+	// initial state and proceed with the test.
+	suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, sdkmath.NewInt(ethparams.InitialBaseFee).BigInt())
 
 	legacytx.RegressionTestingAminoCodec = encodingConfig.Amino
 }

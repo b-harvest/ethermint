@@ -234,9 +234,15 @@ func (suite *KeeperTestSuite) EvmDenom() string {
 }
 
 func (suite *KeeperTestSuite) Commit() {
-	_, err := suite.app.Commit()
-	suite.Require().NoError(err)
 	header := suite.ctx.BlockHeader()
+	_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: header.Height,
+	})
+	suite.Require().NoError(err)
+
+	_, err = suite.app.Commit()
+	suite.Require().NoError(err)
+
 	header.Height += 1
 	suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height: header.Height,

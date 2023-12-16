@@ -7,7 +7,6 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -578,8 +577,6 @@ func (suite *KeeperTestSuite) TestEstimateGas() {
 			"erc20 transfer",
 			func() {
 				contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
-				_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-				suite.Require().NoError(err)
 				suite.Commit()
 				transferData, err := types.ERC20Contract.ABI.Pack("transfer", common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(1000))
 				suite.Require().NoError(err)
@@ -655,8 +652,6 @@ func (suite *KeeperTestSuite) TestEstimateGas() {
 			"erc20 transfer w/ enableFeemarket",
 			func() {
 				contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
-				_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-				suite.Require().NoError(err)
 				suite.Commit()
 				transferData, err := types.ERC20Contract.ABI.Pack("transfer", common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(1000))
 				suite.Require().NoError(err)
@@ -838,14 +833,10 @@ func (suite *KeeperTestSuite) TestTraceTx() {
 				suite.Require().NoError(vmdb.Commit())
 
 				contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
-				_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-				suite.Require().NoError(err)
 				suite.Commit()
 				// Generate token transfer transaction
 				firstTx := suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
 				txMsg = suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
-				_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-				suite.Require().NoError(err)
 
 				predecessors = append(predecessors, firstTx)
 			},
@@ -941,13 +932,9 @@ func (suite *KeeperTestSuite) TestTraceTx() {
 			suite.SetupTest()
 			// Deploy contract
 			contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
-			_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-			suite.Require().NoError(err)
 			suite.Commit()
 			// Generate token transfer transaction
 			txMsg = suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
-			_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-			suite.Require().NoError(err)
 			suite.Commit()
 
 			tc.malleate()
@@ -1065,14 +1052,10 @@ func (suite *KeeperTestSuite) TestTraceBlock() {
 				suite.Require().NoError(vmdb.Commit())
 
 				contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
-				_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-				suite.Require().NoError(err)
 				suite.Commit()
 				// create multiple transactions in the same block
 				firstTx := suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
 				secondTx := suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
-				_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-				suite.Require().NoError(err)
 				// overwrite txs to include only the ones on new block
 				txs = append([]*types.MsgEthereumTx{}, firstTx, secondTx)
 			},
@@ -1124,13 +1107,9 @@ func (suite *KeeperTestSuite) TestTraceBlock() {
 			suite.SetupTest()
 			// Deploy contract
 			contractAddr := suite.DeployTestContract(suite.T(), suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
-			_, err := suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-			suite.Require().NoError(err)
 			suite.Commit()
 			// Generate token transfer transaction
 			txMsg := suite.TransferERC20Token(suite.T(), contractAddr, suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), sdkmath.NewIntWithDecimal(1, 18).BigInt())
-			_, err = suite.app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: suite.ctx.BlockHeight()})
-			suite.Require().NoError(err)
 			suite.Commit()
 
 			txs = append(txs, txMsg)
