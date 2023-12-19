@@ -48,7 +48,7 @@ rem increase block time (?)
 cat %GENESIS% | jq ".consensus_params[\"block\"][\"time_iota_ms\"]=\"30000\"" > %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
 
 rem gas limit in genesis
-cat %GENESIS% | jq ".consensus_params[\"block\"][\"max_gas\"]=\"10000000\"" > %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
+cat %GENESIS% | jq ".consensus[\"params\"][\"block\"][\"max_gas\"]=\"10000000\"" > %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
 
 rem setup
 sed -i "s/create_empty_blocks = true/create_empty_blocks = false/g" %ETHCONFIG%
