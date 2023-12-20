@@ -2,7 +2,7 @@ import pytest
 from web3 import Web3
 
 from .network import setup_ethermint
-from .utils import ADDRS, derive_new_account, w3_wait_for_new_blocks
+from .utils import ADDRS, derive_new_account, send_transaction, w3_wait_for_new_blocks
 
 
 @pytest.fixture(scope="module")
@@ -32,20 +32,16 @@ def cluster(request, custom_ethermint, geth):
 def test_get_transaction_count(cluster):
     w3: Web3 = cluster.w3
     blk = hex(w3.eth.block_number)
-    sender = ADDRS["validator"]
 
     receiver = derive_new_account().address
     n0 = w3.eth.get_transaction_count(receiver, blk)
     # ensure transaction send in new block
     w3_wait_for_new_blocks(w3, 1, sleep=0.1)
-    txhash = w3.eth.send_transaction(
-        {
-            "from": sender,
-            "to": receiver,
-            "value": 1000,
-        }
-    )
-    receipt = w3.eth.wait_for_transaction_receipt(txhash)
+    tx = {
+        "to": receiver,
+        "value": 1000,
+    }
+    receipt = send_transaction(w3, tx)
     assert receipt.status == 1
     [n1, n2] = [w3.eth.get_transaction_count(receiver, b) for b in [blk, "latest"]]
     assert n0 == n1
