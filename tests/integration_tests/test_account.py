@@ -2,7 +2,7 @@ import pytest
 from web3 import Web3
 
 from .network import setup_ethermint
-from .utils import ADDRS, derive_new_account, send_transaction, w3_wait_for_new_blocks
+from .utils import derive_new_account, send_transaction, w3_wait_for_new_blocks
 
 
 @pytest.fixture(scope="module")
