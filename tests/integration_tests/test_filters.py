@@ -715,7 +715,7 @@ def assert_change_greet_log_data(log, new_greeting):
     # check event log data ('from' and 'value' fields)
     types = ["address", "string"]
     names = ["from", "value"]
-    values = abi.decode_abi(types, log["data"])
+    values = abi.decode(types, log["data"])
     log_data = dict(zip(names, values))
 
     # the address stored in the data field may defer on lower/upper case characters
