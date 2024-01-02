@@ -1,44 +1,45 @@
-import sys
-
-import pytest
-
-from .network import setup_ethermint
-from .utils import ADDRS, KEYS, eth_to_bech32, sign_transaction, wait_for_new_blocks
-
-PRIORITY_REDUCTION = 1000000
-
-
-@pytest.fixture(scope="module")
-def custom_ethermint(tmp_path_factory):
-    path = tmp_path_factory.mktemp("priority")
-    yield from setup_ethermint(path, 26800, long_timeout_commit=True)
-
-
-def effective_gas_price(tx, base_fee):
-    if "maxFeePerGas" in tx:
-        # dynamic fee tx
-        return min(base_fee + tx["maxPriorityFeePerGas"], tx["maxFeePerGas"])
-    else:
-        # legacy tx
-        return tx["gasPrice"]
-
-
-def tx_priority(tx, base_fee):
-    if "maxFeePerGas" in tx:
-        # dynamic fee tx
-        return (
-            min(tx["maxPriorityFeePerGas"], tx["maxFeePerGas"] - base_fee)
-            // PRIORITY_REDUCTION
-        )
-    else:
-        # legacy tx
-        return (tx["gasPrice"] - base_fee) // PRIORITY_REDUCTION
-
 # The priority mempool feature has been removed from comet bft. 
 # Tx priority features can be implemented using ABCI++'s app-side mempool. 
 # Therefore, we are removing the related tests. If tx priority features 
 # are implemented on the app-side in the future, the tests will need to be restored.
-    
+
+# import sys
+
+# import pytest
+
+# from .network import setup_ethermint
+# from .utils import ADDRS, KEYS, eth_to_bech32, sign_transaction, wait_for_new_blocks
+
+# PRIORITY_REDUCTION = 1000000
+
+
+# @pytest.fixture(scope="module")
+# def custom_ethermint(tmp_path_factory):
+#     path = tmp_path_factory.mktemp("priority")
+#     yield from setup_ethermint(path, 26800, long_timeout_commit=True)
+
+
+# def effective_gas_price(tx, base_fee):
+#     if "maxFeePerGas" in tx:
+#         # dynamic fee tx
+#         return min(base_fee + tx["maxPriorityFeePerGas"], tx["maxFeePerGas"])
+#     else:
+#         # legacy tx
+#         return tx["gasPrice"]
+
+
+# def tx_priority(tx, base_fee):
+#     if "maxFeePerGas" in tx:
+#         # dynamic fee tx
+#         return (
+#             min(tx["maxPriorityFeePerGas"], tx["maxFeePerGas"] - base_fee)
+#             // PRIORITY_REDUCTION
+#         )
+#     else:
+#         # legacy tx
+#         return (tx["gasPrice"] - base_fee) // PRIORITY_REDUCTION
+
+
 # def test_priority(ethermint):
 #     """
 #     test priorities of different tx types
@@ -202,6 +203,6 @@ def tx_priority(tx, base_fee):
 #     ) for (b1, i1), (b2, i2) in zip(tx_indexes, tx_indexes[1:]))
 
 
-def get_max_priority_price(max_priority_price):
-    "default to max int64 if None"
-    return max_priority_price if max_priority_price is not None else sys.maxsize
+# def get_max_priority_price(max_priority_price):
+#     "default to max int64 if None"
+#     return max_priority_price if max_priority_price is not None else sys.maxsize
