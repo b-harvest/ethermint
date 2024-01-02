@@ -3,12 +3,6 @@
   'ethermint_9000-1': {
     cmd: 'ethermintd',
     'start-flags': '--trace',
-    config: {
-      mempool: {
-        // use v1 mempool to enable tx prioritization
-        version: 'v1',
-      },
-    },
     'app-config': {
       'minimum-gas-prices': '0aphoton',
       'index-events': ['ethereum_tx.ethereumTxHash'],
