@@ -1,6 +1,6 @@
-# The priority mempool feature has been removed from comet bft. 
-# Tx priority features can be implemented using ABCI++'s app-side mempool. 
-# Therefore, we are removing the related tests. If tx priority features 
+# The priority mempool feature has been removed from comet bft.
+# Tx priority features can be implemented using ABCI++'s app-side mempool.
+# Therefore, we are removing the related tests. If tx priority features
 # are implemented on the app-side in the future, the tests will need to be restored.
 
 # import sys
