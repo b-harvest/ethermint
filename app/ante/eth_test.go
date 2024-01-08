@@ -173,7 +173,13 @@ func (suite AnteTestSuite) TestEthGasConsumeDecorator() {
 	ethCfg := suite.app.EvmKeeper.GetParams(suite.ctx).
 		ChainConfig.EthereumConfig(suite.app.EvmKeeper.ChainID())
 	baseFee := suite.app.EvmKeeper.GetBaseFee(suite.ctx, ethCfg)
-	suite.Require().Equal(int64(1000000000), baseFee.Int64())
+
+	// The ctx returned by testutil.Commit() is pointing to finalizeBlockState.ms corresponding
+	// to the previous height. The BeginBlock, DeliverTx, and EndBlock logics have been combined
+	// into a single FinalizeBlock logic. So, the base fee is modified before the commit,
+	// in contrast to the previous logic(https://github.com/evmos/ethermint/blob/eb3cc87c9b24fa7f63c156ad6fb1d071a6f80176/testutil/abci.go#L19-L46).
+	// Therefore, the comparison value was changed from 1000000000 to 875000000.
+	suite.Require().Equal(int64(875000000), baseFee.Int64())
 
 	gasPrice := new(big.Int).Add(baseFee, evmtypes.DefaultPriorityReduction.BigInt())
 

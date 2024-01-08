@@ -12,10 +12,8 @@ import (
 
 // Commit commits a block at a given time. Reminder: At the end of each
 // Tendermint Consensus round the following methods are run
-//  1. BeginBlock
-//  2. DeliverTx
-//  3. EndBlock
-//  4. Commit
+//  1. FinalizeBlock
+//  2. Commit
 func Commit(ctx sdk.Context, app *app.EthermintApp, t time.Duration, vs *tmtypes.ValidatorSet) (sdk.Context, error) {
 	header := ctx.BlockHeader()
 
@@ -50,15 +48,6 @@ func Commit(ctx sdk.Context, app *app.EthermintApp, t time.Duration, vs *tmtypes
 	header.Height++
 	header.Time = header.Time.Add(t)
 	header.AppHash = app.LastCommitID().Hash
-
-	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: header.Height,
-		Time:   header.Time,
-		Hash:   header.AppHash,
-	})
-	if err != nil {
-		return ctx, err
-	}
 
 	return ctx.WithBlockHeader(header), nil
 }
