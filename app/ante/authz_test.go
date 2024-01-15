@@ -340,6 +340,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 					Txs:    [][]byte{bz},
 				},
 			)
+			suite.Require().Equal(len(resFinalizeBlock.TxResults), 1)
 			suite.Require().Equal(resFinalizeBlock.TxResults[0].Code, tc.expectedCode, resFinalizeBlock.TxResults[0].Log)
 		})
 	}

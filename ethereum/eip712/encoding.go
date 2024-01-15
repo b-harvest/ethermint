@@ -51,7 +51,6 @@ func SetEncodingConfig(cfg params.EncodingConfig) {
 func GetEIP712BytesForMsg(signDocBytes []byte) ([]byte, error) {
 	typedData, err := GetEIP712TypedDataForMsg(signDocBytes)
 	if err != nil {
-		_, err := GetEIP712TypedDataForMsg(signDocBytes)
 		return nil, err
 	}
 

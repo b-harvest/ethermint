@@ -64,9 +64,10 @@ func (suite *KeeperTestSuite) TestEvmHooks() {
 		suite.app.EvmKeeper.SetHooks(keeper.NewMultiEvmHooks(hook))
 
 		k := suite.app.EvmKeeper
+		ctx := suite.ctx
 		txHash := common.BigToHash(big.NewInt(1))
-		vmdb := statedb.New(suite.ctx, k, statedb.NewTxConfig(
-			common.BytesToHash(suite.ctx.HeaderHash()),
+		vmdb := statedb.New(ctx, k, statedb.NewTxConfig(
+			common.BytesToHash(ctx.HeaderHash()),
 			txHash,
 			0,
 			0,
@@ -81,7 +82,7 @@ func (suite *KeeperTestSuite) TestEvmHooks() {
 			TxHash: txHash,
 			Logs:   logs,
 		}
-		result := k.PostTxProcessing(suite.ctx, ethtypes.Message{}, receipt)
+		result := k.PostTxProcessing(ctx, ethtypes.Message{}, receipt)
 
 		tc.expFunc(hook, result)
 	}

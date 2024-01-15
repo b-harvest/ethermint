@@ -38,8 +38,6 @@ jobs:
             go.sum
       - name: Test contract
         run: |
-          sudo env "PATH=$PATH" go version
-          sudo env "PATH=$PATH" go env
           sudo env "PATH=$PATH" make contract-tools
           sudo env "PATH=$PATH" make test-solidity
         if: env.GIT_DIFF

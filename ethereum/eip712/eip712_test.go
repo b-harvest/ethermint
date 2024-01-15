@@ -34,9 +34,14 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
+	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -144,156 +149,156 @@ func (suite *EIP712TestSuite) TestEIP712() {
 		timeoutHeight uint64
 		expectSuccess bool
 	}{
-		// {
-		// 	title: "Succeeds - Standard MsgSend",
-		// 	msgs: []sdk.Msg{
-		// 		banktypes.NewMsgSend(
-		// 			suite.createTestAddress(),
-		// 			suite.createTestAddress(),
-		// 			suite.makeCoins(suite.denom, math.NewInt(1)),
-		// 		),
-		// 	},
-		// 	expectSuccess: true,
-		// },
-		// {
-		// 	title: "Succeeds - Standard MsgVote",
-		// 	msgs: []sdk.Msg{
-		// 		govtypes.NewMsgVote(
-		// 			suite.createTestAddress(),
-		// 			5,
-		// 			govtypes.OptionNo,
-		// 		),
-		// 	},
-		// 	expectSuccess: true,
-		// },
-		// {
-		// 	title: "Succeeds - Standard MsgDelegate",
-		// 	msgs: []sdk.Msg{
-		// 		stakingtypes.NewMsgDelegate(
-		// 			suite.createTestAddress().String(),
-		// 			sdk.ValAddress(suite.createTestAddress()).String(),
-		// 			suite.makeCoins(suite.denom, math.NewInt(1))[0],
-		// 		),
-		// 	},
-		// 	expectSuccess: true,
-		// },
-		// {
-		// 	title: "Succeeds - Standard MsgWithdrawDelegationReward",
-		// 	msgs: []sdk.Msg{
-		// 		distributiontypes.NewMsgWithdrawDelegatorReward(
-		// 			suite.createTestAddress().String(),
-		// 			sdk.ValAddress(suite.createTestAddress()).String(),
-		// 		),
-		// 	},
-		// 	expectSuccess: true,
-		// },
-		// {
-		// 	title: "Succeeds - Two Single-Signer MsgDelegate",
-		// 	msgs: []sdk.Msg{
-		// 		stakingtypes.NewMsgDelegate(
-		// 			params.address.String(),
-		// 			sdk.ValAddress(suite.createTestAddress()).String(),
-		// 			suite.makeCoins(suite.denom, math.NewInt(1))[0],
-		// 		),
-		// 		stakingtypes.NewMsgDelegate(
-		// 			params.address.String(),
-		// 			sdk.ValAddress(suite.createTestAddress()).String(),
-		// 			suite.makeCoins(suite.denom, math.NewInt(5))[0],
-		// 		),
-		// 	},
-		// 	expectSuccess: true,
-		// },
-		// {
-		// 	title: "Succeeds - Single-Signer MsgVote V1 with Omitted Value",
-		// 	msgs: []sdk.Msg{
-		// 		govtypesv1.NewMsgVote(
-		// 			params.address,
-		// 			5,
-		// 			govtypesv1.VoteOption_VOTE_OPTION_NO,
-		// 			"",
-		// 		),
-		// 	},
-		// 	expectSuccess: true,
-		// },
-		// {
-		// 	title: "Succeeds - Single-Signer MsgSend + MsgVote",
-		// 	msgs: []sdk.Msg{
-		// 		govtypes.NewMsgVote(
-		// 			params.address,
-		// 			5,
-		// 			govtypes.OptionNo,
-		// 		),
-		// 		banktypes.NewMsgSend(
-		// 			params.address,
-		// 			suite.createTestAddress(),
-		// 			suite.makeCoins(suite.denom, math.NewInt(50)),
-		// 		),
-		// 	},
-		// 	expectSuccess: !suite.useLegacyEIP712TypedData,
-		// },
-		// {
-		// 	title: "Succeeds - Single-Signer 2x MsgVoteV1 with Different Schemas",
-		// 	msgs: []sdk.Msg{
-		// 		govtypesv1.NewMsgVote(
-		// 			params.address,
-		// 			5,
-		// 			govtypesv1.VoteOption_VOTE_OPTION_NO,
-		// 			"",
-		// 		),
-		// 		govtypesv1.NewMsgVote(
-		// 			params.address,
-		// 			10,
-		// 			govtypesv1.VoteOption_VOTE_OPTION_YES,
-		// 			"Has Metadata",
-		// 		),
-		// 	},
-		// 	expectSuccess: !suite.useLegacyEIP712TypedData,
-		// },
-		// {
-		// 	title: "Fails - Two MsgVotes with Different Signers",
-		// 	msgs: []sdk.Msg{
-		// 		govtypes.NewMsgVote(
-		// 			suite.createTestAddress(),
-		// 			5,
-		// 			govtypes.OptionNo,
-		// 		),
-		// 		govtypes.NewMsgVote(
-		// 			suite.createTestAddress(),
-		// 			25,
-		// 			govtypes.OptionAbstain,
-		// 		),
-		// 	},
-		// 	expectSuccess: false,
-		// },
+		{
+			title: "Succeeds - Standard MsgSend",
+			msgs: []sdk.Msg{
+				banktypes.NewMsgSend(
+					suite.createTestAddress(),
+					suite.createTestAddress(),
+					suite.makeCoins(suite.denom, math.NewInt(1)),
+				),
+			},
+			expectSuccess: true,
+		},
+		{
+			title: "Succeeds - Standard MsgVote",
+			msgs: []sdk.Msg{
+				govtypes.NewMsgVote(
+					suite.createTestAddress(),
+					5,
+					govtypes.OptionNo,
+				),
+			},
+			expectSuccess: true,
+		},
+		{
+			title: "Succeeds - Standard MsgDelegate",
+			msgs: []sdk.Msg{
+				stakingtypes.NewMsgDelegate(
+					suite.createTestAddress().String(),
+					sdk.ValAddress(suite.createTestAddress()).String(),
+					suite.makeCoins(suite.denom, math.NewInt(1))[0],
+				),
+			},
+			expectSuccess: true,
+		},
+		{
+			title: "Succeeds - Standard MsgWithdrawDelegationReward",
+			msgs: []sdk.Msg{
+				distributiontypes.NewMsgWithdrawDelegatorReward(
+					suite.createTestAddress().String(),
+					sdk.ValAddress(suite.createTestAddress()).String(),
+				),
+			},
+			expectSuccess: true,
+		},
+		{
+			title: "Succeeds - Two Single-Signer MsgDelegate",
+			msgs: []sdk.Msg{
+				stakingtypes.NewMsgDelegate(
+					params.address.String(),
+					sdk.ValAddress(suite.createTestAddress()).String(),
+					suite.makeCoins(suite.denom, math.NewInt(1))[0],
+				),
+				stakingtypes.NewMsgDelegate(
+					params.address.String(),
+					sdk.ValAddress(suite.createTestAddress()).String(),
+					suite.makeCoins(suite.denom, math.NewInt(5))[0],
+				),
+			},
+			expectSuccess: true,
+		},
+		{
+			title: "Succeeds - Single-Signer MsgVote V1 with Omitted Value",
+			msgs: []sdk.Msg{
+				govtypesv1.NewMsgVote(
+					params.address,
+					5,
+					govtypesv1.VoteOption_VOTE_OPTION_NO,
+					"",
+				),
+			},
+			expectSuccess: true,
+		},
+		{
+			title: "Succeeds - Single-Signer MsgSend + MsgVote",
+			msgs: []sdk.Msg{
+				govtypes.NewMsgVote(
+					params.address,
+					5,
+					govtypes.OptionNo,
+				),
+				banktypes.NewMsgSend(
+					params.address,
+					suite.createTestAddress(),
+					suite.makeCoins(suite.denom, math.NewInt(50)),
+				),
+			},
+			expectSuccess: !suite.useLegacyEIP712TypedData,
+		},
+		{
+			title: "Succeeds - Single-Signer 2x MsgVoteV1 with Different Schemas",
+			msgs: []sdk.Msg{
+				govtypesv1.NewMsgVote(
+					params.address,
+					5,
+					govtypesv1.VoteOption_VOTE_OPTION_NO,
+					"",
+				),
+				govtypesv1.NewMsgVote(
+					params.address,
+					10,
+					govtypesv1.VoteOption_VOTE_OPTION_YES,
+					"Has Metadata",
+				),
+			},
+			expectSuccess: !suite.useLegacyEIP712TypedData,
+		},
+		{
+			title: "Fails - Two MsgVotes with Different Signers",
+			msgs: []sdk.Msg{
+				govtypes.NewMsgVote(
+					suite.createTestAddress(),
+					5,
+					govtypes.OptionNo,
+				),
+				govtypes.NewMsgVote(
+					suite.createTestAddress(),
+					25,
+					govtypes.OptionAbstain,
+				),
+			},
+			expectSuccess: false,
+		},
 		{
 			title:         "Fails - Empty Transaction",
 			msgs:          []sdk.Msg{},
 			expectSuccess: false,
 		},
-		// {
-		// 	title:   "Fails - Invalid ChainID",
-		// 	chainID: "invalidchainid",
-		// 	msgs: []sdk.Msg{
-		// 		govtypes.NewMsgVote(
-		// 			suite.createTestAddress(),
-		// 			5,
-		// 			govtypes.OptionNo,
-		// 		),
-		// 	},
-		// 	expectSuccess: false,
-		// },
-		// {
-		// 	title: "Fails - Includes TimeoutHeight",
-		// 	msgs: []sdk.Msg{
-		// 		govtypes.NewMsgVote(
-		// 			suite.createTestAddress(),
-		// 			5,
-		// 			govtypes.OptionNo,
-		// 		),
-		// 	},
-		// 	timeoutHeight: 1000,
-		// 	expectSuccess: false,
-		// },
+		{
+			title:   "Fails - Invalid ChainID",
+			chainID: "invalidchainid",
+			msgs: []sdk.Msg{
+				govtypes.NewMsgVote(
+					suite.createTestAddress(),
+					5,
+					govtypes.OptionNo,
+				),
+			},
+			expectSuccess: false,
+		},
+		{
+			title: "Fails - Includes TimeoutHeight",
+			msgs: []sdk.Msg{
+				govtypes.NewMsgVote(
+					suite.createTestAddress(),
+					5,
+					govtypes.OptionNo,
+				),
+			},
+			timeoutHeight: 1000,
+			expectSuccess: false,
+		},
 	}
 
 	for _, tc := range testCases {
