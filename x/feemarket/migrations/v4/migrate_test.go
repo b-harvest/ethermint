@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/evmos/ethermint/encoding"
@@ -35,15 +36,17 @@ func TestMigrate(t *testing.T) {
 	storeKey := storetypes.NewKVStoreKey(types.ModuleName)
 	tKey := storetypes.NewTransientStoreKey("transient_test")
 	ctx := testutil.DefaultContext(storeKey, tKey)
-	kvStore := ctx.KVStore(storeKey)
+	storeService := runtime.NewKVStoreService(storeKey)
 
 	legacySubspaceEmpty := newMockSubspaceEmpty()
-	require.Error(t, v4.MigrateStore(ctx, kvStore, legacySubspaceEmpty, cdc))
+	require.Error(t, v4.MigrateStore(ctx, storeService, legacySubspaceEmpty, cdc))
 
 	legacySubspace := newMockSubspace(types.DefaultParams())
-	require.NoError(t, v4.MigrateStore(ctx, kvStore, legacySubspace, cdc))
+	require.NoError(t, v4.MigrateStore(ctx, storeService, legacySubspace, cdc))
 
-	paramsBz := kvStore.Get(types.ParamsKey)
+	kvStore := storeService.OpenKVStore(ctx)
+	paramsBz, err := kvStore.Get(types.ParamsKey)
+	require.NoError(t, err)
 	var params types.Params
 	cdc.MustUnmarshal(paramsBz, &params)
 

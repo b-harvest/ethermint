@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	"github.com/stretchr/testify/require"
 
@@ -20,12 +21,14 @@ func TestMigrate(t *testing.T) {
 	storeKey := storetypes.NewKVStoreKey(types.ModuleName)
 	tKey := storetypes.NewTransientStoreKey("transient_test")
 	ctx := testutil.DefaultContext(storeKey, tKey)
-	kvStore := ctx.KVStore(storeKey)
+	storeService := runtime.NewKVStoreService(storeKey)
 
 	extraEIPs := v5types.V5ExtraEIPs{EIPs: types.AvailableExtraEIPs}
 	extraEIPsBz := cdc.MustMarshal(&extraEIPs)
 	chainConfig := types.DefaultChainConfig()
 	chainConfigBz := cdc.MustMarshal(&chainConfig)
+
+	kvStore := storeService.OpenKVStore(ctx)
 
 	// Set the params in the store
 	kvStore.Set(types.ParamStoreKeyEVMDenom, []byte("aphoton"))
@@ -35,10 +38,11 @@ func TestMigrate(t *testing.T) {
 	kvStore.Set(types.ParamStoreKeyExtraEIPs, extraEIPsBz)
 	kvStore.Set(types.ParamStoreKeyChainConfig, chainConfigBz)
 
-	err := v5.MigrateStore(ctx, kvStore, cdc)
+	err := v5.MigrateStore(ctx, storeService, cdc)
 	require.NoError(t, err)
 
-	paramsBz := kvStore.Get(types.KeyPrefixParams)
+	paramsBz, err := kvStore.Get(types.KeyPrefixParams)
+	require.NoError(t, err)
 	var params types.Params
 	cdc.MustUnmarshal(paramsBz, &params)
 
@@ -51,10 +55,16 @@ func TestMigrate(t *testing.T) {
 	require.Equal(t, extraEIPs.EIPs, params.ExtraEIPs)
 
 	// check that the keys are deleted
-	require.False(t, kvStore.Has(types.ParamStoreKeyEVMDenom))
-	require.False(t, kvStore.Has(types.ParamStoreKeyEnableCreate))
-	require.False(t, kvStore.Has(types.ParamStoreKeyEnableCall))
-	require.False(t, kvStore.Has(types.ParamStoreKeyAllowUnprotectedTxs))
-	require.False(t, kvStore.Has(types.ParamStoreKeyExtraEIPs))
-	require.False(t, kvStore.Has(types.ParamStoreKeyChainConfig))
+	value, _ := kvStore.Has(types.ParamStoreKeyEVMDenom)
+	require.False(t, value)
+	value, _ = kvStore.Has(types.ParamStoreKeyEnableCreate)
+	require.False(t, value)
+	value, _ = kvStore.Has(types.ParamStoreKeyEnableCall)
+	require.False(t, value)
+	value, _ = kvStore.Has(types.ParamStoreKeyAllowUnprotectedTxs)
+	require.False(t, value)
+	value, _ = kvStore.Has(types.ParamStoreKeyExtraEIPs)
+	require.False(t, value)
+	value, _ = kvStore.Has(types.ParamStoreKeyChainConfig)
+	require.False(t, value)
 }
