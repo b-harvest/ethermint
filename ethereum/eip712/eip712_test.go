@@ -342,11 +342,6 @@ func (suite *EIP712TestSuite) TestEIP712() {
 				anyPk, err := codectypes.NewAnyWithValue(pubKey)
 				suite.Require().NoError(err)
 
-				builtTx := txBuilder.GetTx()
-				adaptableTx, ok := builtTx.(authsigning.V2AdaptableTx)
-				suite.Require().True(ok)
-				txData := adaptableTx.GetSigningTxData()
-
 				signerData := txsigning.SignerData{
 					ChainID:       chainID,
 					AccountNumber: params.accountNumber,
@@ -357,6 +352,11 @@ func (suite *EIP712TestSuite) TestEIP712() {
 					},
 					Address: sdk.MustBech32ifyAddressBytes(config.Bech32Prefix, pubKey.Bytes()),
 				}
+
+				builtTx := txBuilder.GetTx()
+				adaptableTx, ok := builtTx.(authsigning.V2AdaptableTx)
+				suite.Require().True(ok)
+				txData := adaptableTx.GetSigningTxData()
 
 				bz, err := suite.clientCtx.TxConfig.SignModeHandler().GetSignBytes(
 					context.Background(),

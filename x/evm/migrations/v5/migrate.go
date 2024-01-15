@@ -1,7 +1,7 @@
 package v5
 
 import (
-	storetypes "cosmossdk.io/store/types"
+	corestore "cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/evmos/ethermint/x/evm/types"
@@ -15,7 +15,7 @@ import (
 // a single params key.
 func MigrateStore(
 	ctx sdk.Context,
-	store storetypes.KVStore,
+	storeService corestore.KVStoreService,
 	cdc codec.BinaryCodec,
 ) error {
 	var (
@@ -24,9 +24,18 @@ func MigrateStore(
 		params      types.Params
 	)
 
-	denom := string(store.Get(types.ParamStoreKeyEVMDenom))
+	store := storeService.OpenKVStore(ctx)
 
-	extraEIPsBz := store.Get(types.ParamStoreKeyExtraEIPs)
+	value, err := store.Get(types.ParamStoreKeyEVMDenom)
+	if err != nil {
+		return err
+	}
+	denom := string(value)
+
+	extraEIPsBz, err := store.Get(types.ParamStoreKeyExtraEIPs)
+	if err != nil {
+		return err
+	}
 	cdc.MustUnmarshal(extraEIPsBz, &extraEIPs)
 
 	// revert ExtraEIP change for Evmos testnet
@@ -34,15 +43,18 @@ func MigrateStore(
 		extraEIPs.EIPs = []int64{}
 	}
 
-	chainCfgBz := store.Get(types.ParamStoreKeyChainConfig)
+	chainCfgBz, err := store.Get(types.ParamStoreKeyChainConfig)
+	if err != nil {
+		return err
+	}
 	cdc.MustUnmarshal(chainCfgBz, &chainConfig)
 
 	params.EvmDenom = denom
 	params.ExtraEIPs = extraEIPs.EIPs
 	params.ChainConfig = chainConfig
-	params.EnableCreate = store.Has(types.ParamStoreKeyEnableCreate)
-	params.EnableCall = store.Has(types.ParamStoreKeyEnableCall)
-	params.AllowUnprotectedTxs = store.Has(types.ParamStoreKeyAllowUnprotectedTxs)
+	params.EnableCreate, _ = store.Has(types.ParamStoreKeyEnableCreate)
+	params.EnableCall, _ = store.Has(types.ParamStoreKeyEnableCall)
+	params.AllowUnprotectedTxs, _ = store.Has(types.ParamStoreKeyAllowUnprotectedTxs)
 
 	store.Delete(types.ParamStoreKeyChainConfig)
 	store.Delete(types.ParamStoreKeyExtraEIPs)

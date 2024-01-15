@@ -16,7 +16,6 @@
 package keeper
 
 import (
-	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v4 "github.com/evmos/ethermint/x/feemarket/migrations/v4"
 	"github.com/evmos/ethermint/x/feemarket/types"
@@ -38,6 +37,5 @@ func NewMigrator(keeper Keeper, legacySubspace types.Subspace) Migrator {
 
 // Migrate3to4 migrates the store from consensus version 3 to 4
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
-	store := runtime.KVStoreAdapter(m.keeper.storeService.OpenKVStore(ctx))
-	return v4.MigrateStore(ctx, store, m.legacySubspace, m.keeper.cdc)
+	return v4.MigrateStore(ctx, m.keeper.storeService, m.legacySubspace, m.keeper.cdc)
 }

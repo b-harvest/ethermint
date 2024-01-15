@@ -1,7 +1,7 @@
 package v4
 
 import (
-	storetypes "cosmossdk.io/store/types"
+	corestore "cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -14,7 +14,7 @@ import (
 // and managed by the Cosmos SDK params module and stores them directly into the x/evm module state.
 func MigrateStore(
 	ctx sdk.Context,
-	store storetypes.KVStore,
+	storeService corestore.KVStoreService,
 	legacySubspace types.Subspace,
 	cdc codec.BinaryCodec,
 ) error {
@@ -29,20 +29,36 @@ func MigrateStore(
 	chainCfgBz := cdc.MustMarshal(&params.ChainConfig)
 	extraEIPsBz := cdc.MustMarshal(&v4types.ExtraEIPs{EIPs: params.ExtraEIPs})
 
-	store.Set(types.ParamStoreKeyEVMDenom, []byte(params.EvmDenom))
-	store.Set(types.ParamStoreKeyExtraEIPs, extraEIPsBz)
-	store.Set(types.ParamStoreKeyChainConfig, chainCfgBz)
+	store := storeService.OpenKVStore(ctx)
+
+	if err := store.Set(types.ParamStoreKeyEVMDenom, []byte(params.EvmDenom)); err != nil {
+		return err
+	}
+
+	if err := store.Set(types.ParamStoreKeyExtraEIPs, extraEIPsBz); err != nil {
+		return err
+	}
+
+	if err := store.Set(types.ParamStoreKeyChainConfig, chainCfgBz); err != nil {
+		return err
+	}
 
 	if params.AllowUnprotectedTxs {
-		store.Set(types.ParamStoreKeyAllowUnprotectedTxs, []byte{0x01})
+		if err := store.Set(types.ParamStoreKeyAllowUnprotectedTxs, []byte{0x01}); err != nil {
+			return err
+		}
 	}
 
 	if params.EnableCall {
-		store.Set(types.ParamStoreKeyEnableCall, []byte{0x01})
+		if err := store.Set(types.ParamStoreKeyEnableCall, []byte{0x01}); err != nil {
+			return err
+		}
 	}
 
 	if params.EnableCreate {
-		store.Set(types.ParamStoreKeyEnableCreate, []byte{0x01})
+		if err := store.Set(types.ParamStoreKeyEnableCreate, []byte{0x01}); err != nil {
+			return err
+		}
 	}
 
 	return nil
