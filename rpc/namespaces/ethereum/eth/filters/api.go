@@ -352,7 +352,7 @@ func (api *PublicFilterAPI) NewHeads(ctx context.Context) (*rpc.Subscription, er
 
 				data, ok := ev.Data.(tmtypes.EventDataNewBlockEvents)
 				if !ok {
-					api.logger.Debug("event data type mismatch", "type", fmt.Sprintf("%T", ev.Data))
+					api.logger.Debug("EventDataNewBlockEvents type mismatch", "type", fmt.Sprintf("%T", ev.Data))
 					continue
 				}
 
@@ -360,7 +360,7 @@ func (api *PublicFilterAPI) NewHeads(ctx context.Context) (*rpc.Subscription, er
 
 				data1, ok := ev.Data.(tmtypes.EventDataNewBlockHeader)
 				if !ok {
-					api.logger.Debug("event data type mismatch", "type", fmt.Sprintf("%T", ev.Data))
+					api.logger.Debug("EventDataNewBlockHeader type mismatch", "type", fmt.Sprintf("%T", ev.Data))
 					continue
 				}
 

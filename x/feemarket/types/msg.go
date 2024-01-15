@@ -5,7 +5,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	feemarketv1 "github.com/evmos/ethermint/api/ethermint/feemarket/v1"
+	feemarketapi "github.com/evmos/ethermint/api/ethermint/feemarket/v1"
 )
 
 var _ sdk.Msg = &MsgUpdateParams{}
@@ -31,7 +31,7 @@ func (m MsgUpdateParams) GetSignBytes() []byte {
 }
 
 func GetSignersFromMsgUpdateParamsV2(msg protov2.Message) ([][]byte, error) {
-	msgv2, ok := msg.(*feemarketv1.MsgUpdateParams)
+	msgv2, ok := msg.(*feemarketapi.MsgUpdateParams)
 	if !ok {
 		return nil, nil
 	}

@@ -34,7 +34,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	evmv1 "github.com/evmos/ethermint/api/ethermint/evm/v1"
+	evmapi "github.com/evmos/ethermint/api/ethermint/evm/v1"
 
 	"github.com/evmos/ethermint/types"
 
@@ -225,7 +225,7 @@ func (msg *MsgEthereumTx) GetMsgs() []sdk.Msg {
 }
 
 func (msg *MsgEthereumTx) GetMsgsV2() ([]protov2.Message, error) {
-	m := evmv1.MsgEthereumTx{
+	m := evmapi.MsgEthereumTx{
 		Data: &anypb.Any{
 			TypeUrl: msg.Data.TypeUrl,
 			Value:   msg.Data.Value,
@@ -484,7 +484,7 @@ func GetSignersFromMsgEthereumTxV2(msg protov2.Message) ([][]byte, error) {
 }
 
 func GetMsgEthereumTxFromMsgV2(msg protov2.Message) (MsgEthereumTx, error) {
-	msgv2, ok := msg.(*evmv1.MsgEthereumTx)
+	msgv2, ok := msg.(*evmapi.MsgEthereumTx)
 	if !ok {
 		return MsgEthereumTx{}, nil
 	}
@@ -520,7 +520,7 @@ func GetMsgEthereumTxFromMsgV2(msg protov2.Message) (MsgEthereumTx, error) {
 }
 
 func GetSignersFromMsgUpdateParamsV2(msg protov2.Message) ([][]byte, error) {
-	msgv2, ok := msg.(*evmv1.MsgUpdateParams)
+	msgv2, ok := msg.(*evmapi.MsgUpdateParams)
 	if !ok {
 		return nil, nil
 	}
