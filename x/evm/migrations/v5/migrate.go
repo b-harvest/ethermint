@@ -56,12 +56,12 @@ func MigrateStore(
 	params.EnableCall, _ = store.Has(types.ParamStoreKeyEnableCall)
 	params.AllowUnprotectedTxs, _ = store.Has(types.ParamStoreKeyAllowUnprotectedTxs)
 
-	store.Delete(types.ParamStoreKeyChainConfig)
-	store.Delete(types.ParamStoreKeyExtraEIPs)
-	store.Delete(types.ParamStoreKeyEVMDenom)
-	store.Delete(types.ParamStoreKeyEnableCreate)
-	store.Delete(types.ParamStoreKeyEnableCall)
-	store.Delete(types.ParamStoreKeyAllowUnprotectedTxs)
+	_ = store.Delete(types.ParamStoreKeyChainConfig)
+	_ = store.Delete(types.ParamStoreKeyExtraEIPs)
+	_ = store.Delete(types.ParamStoreKeyEVMDenom)
+	_ = store.Delete(types.ParamStoreKeyEnableCreate)
+	_ = store.Delete(types.ParamStoreKeyEnableCall)
+	_ = store.Delete(types.ParamStoreKeyAllowUnprotectedTxs)
 
 	if err := params.Validate(); err != nil {
 		return err
@@ -69,6 +69,10 @@ func MigrateStore(
 
 	bz := cdc.MustMarshal(&params)
 
-	store.Set(types.KeyPrefixParams, bz)
+	err = store.Set(types.KeyPrefixParams, bz)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

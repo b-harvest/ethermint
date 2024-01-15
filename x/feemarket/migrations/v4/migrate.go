@@ -32,7 +32,10 @@ func MigrateStore(
 		return err
 	}
 
-	store.Set(types.ParamsKey, bz)
+	err = store.Set(types.ParamsKey, bz)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
