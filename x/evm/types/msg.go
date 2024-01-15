@@ -486,7 +486,7 @@ func GetSignersFromMsgEthereumTxV2(msg protov2.Message) ([][]byte, error) {
 func GetMsgEthereumTxFromMsgV2(msg protov2.Message) (MsgEthereumTx, error) {
 	msgv2, ok := msg.(*evmapi.MsgEthereumTx)
 	if !ok {
-		return MsgEthereumTx{}, nil
+		return MsgEthereumTx{}, fmt.Errorf("invalid x/evm/MsgEthereumTx msg v2: %v", msg)
 	}
 
 	var dataAny *codectypes.Any
@@ -520,13 +520,9 @@ func GetMsgEthereumTxFromMsgV2(msg protov2.Message) (MsgEthereumTx, error) {
 }
 
 func GetSignersFromMsgUpdateParamsV2(msg protov2.Message) ([][]byte, error) {
-	msgv2, ok := msg.(*evmapi.MsgUpdateParams)
-	if !ok {
-		return nil, nil
-	}
-
-	msgv1 := MsgUpdateParams{
-		Authority: msgv2.Authority,
+	msgv1, err := GetMsgUpdateParamsFromMsgV2(msg)
+	if err != nil {
+		return nil, err
 	}
 
 	signers := [][]byte{}
@@ -535,4 +531,17 @@ func GetSignersFromMsgUpdateParamsV2(msg protov2.Message) ([][]byte, error) {
 	}
 
 	return signers, nil
+}
+
+func GetMsgUpdateParamsFromMsgV2(msg protov2.Message) (MsgUpdateParams, error) {
+	msgv2, ok := msg.(*evmapi.MsgUpdateParams)
+	if !ok {
+		return MsgUpdateParams{}, fmt.Errorf("invalid x/evm/MsgUpdateParams msg v2: %v", msg)
+	}
+
+	msgv1 := MsgUpdateParams{
+		Authority: msgv2.Authority,
+	}
+
+	return msgv1, nil
 }

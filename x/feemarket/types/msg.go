@@ -1,6 +1,8 @@
 package types
 
 import (
+	"fmt"
+
 	protov2 "google.golang.org/protobuf/proto"
 
 	errorsmod "cosmossdk.io/errors"
@@ -31,13 +33,9 @@ func (m MsgUpdateParams) GetSignBytes() []byte {
 }
 
 func GetSignersFromMsgUpdateParamsV2(msg protov2.Message) ([][]byte, error) {
-	msgv2, ok := msg.(*feemarketapi.MsgUpdateParams)
-	if !ok {
-		return nil, nil
-	}
-
-	msgv1 := MsgUpdateParams{
-		Authority: msgv2.Authority,
+	msgv1, err := GetMsgUpdateParamsFromMsgV2(msg)
+	if err != nil {
+		return nil, err
 	}
 
 	signers := [][]byte{}
@@ -46,4 +44,17 @@ func GetSignersFromMsgUpdateParamsV2(msg protov2.Message) ([][]byte, error) {
 	}
 
 	return signers, nil
+}
+
+func GetMsgUpdateParamsFromMsgV2(msg protov2.Message) (MsgUpdateParams, error) {
+	msgv2, ok := msg.(*feemarketapi.MsgUpdateParams)
+	if !ok {
+		return MsgUpdateParams{}, fmt.Errorf("invalid x/feemarket/MsgUpdateParams msg v2: %v", msg)
+	}
+
+	msgv1 := MsgUpdateParams{
+		Authority: msgv2.Authority,
+	}
+
+	return msgv1, nil
 }
