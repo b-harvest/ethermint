@@ -38,7 +38,6 @@ import (
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/evmos/ethermint/tests"
 	ethermint "github.com/evmos/ethermint/types"
-	"github.com/evmos/ethermint/x/evm"
 	"github.com/evmos/ethermint/x/evm/statedb"
 	"github.com/evmos/ethermint/x/evm/types"
 
@@ -170,7 +169,11 @@ func (suite *EvmTestSuite) DoSetupTest(t require.TestingT) {
 	suite.app.StakingKeeper.SetValidator(suite.ctx, validator)
 
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
-	suite.handler = evm.NewHandler(suite.app.EvmKeeper)
+
+	// get `ethermintd tx evm raw` msg handler
+	msg := types.NewTx(nil, 0, nil, nil, 0, nil, nil, nil, nil, nil)
+	suite.handler = suite.app.MsgServiceRouter().Handler(msg)
+	require.NotNil(t, suite.handler)
 }
 
 func (suite *EvmTestSuite) SetupTest() {
