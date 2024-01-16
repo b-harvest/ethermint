@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"path/filepath"
 
 	tmcfg "github.com/cometbft/cometbft/config"
@@ -34,6 +33,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"golang.org/x/sync/errgroup"
 
+	"cosmossdk.io/log"
+
 	"github.com/cosmos/cosmos-sdk/server/api"
 	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
@@ -43,7 +44,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	mintypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -66,17 +68,19 @@ func startInProcess(cfg Config, val *Validator) error {
 	}
 
 	app := cfg.AppConstructor(*val)
+	val.app = app
 
 	appGenesisProvider := func() (*types.GenesisDoc, error) {
 		appGenesis, err := genutiltypes.AppGenesisFromFile(tmCfg.GenesisFile())
 		if err != nil {
 			return nil, err
 		}
+
 		return appGenesis.ToGenesisDoc()
 	}
 
 	cmtApp := server.NewCometABCIWrapper(app)
-	tmNode, err := node.NewNode(
+	tmNode, err := node.NewNode( //resleak:notresource
 		tmCfg,
 		pvm.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile()),
 		nodeKey,
@@ -129,13 +133,13 @@ func startInProcess(cfg Config, val *Validator) error {
 		// Start the gRPC server in a goroutine. Note, the provided ctx will ensure
 		// that the server is gracefully shut down.
 		val.errGroup.Go(func() error {
-			return servergrpc.StartGRPCServer(ctx, logger.With("module", "grpc-server"), grpcCfg, grpcSrv)
+			return servergrpc.StartGRPCServer(ctx, logger.With(log.ModuleKey, "grpc-server"), grpcCfg, grpcSrv)
 		})
 
 		val.grpc = grpcSrv
 	}
 
-	if val.AppConfig.API.Enable && val.APIAddress != "" {
+	if val.APIAddress != "" {
 		apiSrv := api.New(val.ClientCtx, logger.With("module", "api-server"), val.grpc)
 		app.RegisterAPIRoutes(apiSrv, val.AppConfig.API)
 
@@ -153,7 +157,6 @@ func startInProcess(cfg Config, val *Validator) error {
 
 		tmEndpoint := "/websocket"
 		tmRPCAddr := val.RPCAddress
-
 		val.jsonrpc, val.jsonrpcDone, err = server.StartJSONRPC(val.Ctx, val.ClientCtx, tmRPCAddr, tmEndpoint, val.AppConfig, nil)
 		if err != nil {
 			return err
@@ -190,16 +193,8 @@ func collectGenFiles(cfg Config, vals []*Validator, outputDir string) error {
 			return err
 		}
 
-		appState, err := genutil.GenAppStateFromConfig(
-			cfg.Codec,
-			cfg.TxConfig,
-			tmCfg,
-			initCfg,
-			appGenesis,
-			banktypes.GenesisBalancesIterator{},
-			genutiltypes.DefaultMessageValidator,
-			cfg.TxConfig.SigningContext().ValidatorAddressCodec(),
-		)
+		appState, err := genutil.GenAppStateFromConfig(cfg.Codec, cfg.TxConfig,
+			tmCfg, initCfg, appGenesis, banktypes.GenesisBalancesIterator{}, genutiltypes.DefaultMessageValidator, cfg.TxConfig.SigningContext().ValidatorAddressCodec())
 		if err != nil {
 			return err
 		}
@@ -242,7 +237,7 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 	var govGenState govv1.GenesisState
 	cfg.Codec.MustUnmarshalJSON(cfg.GenesisState[govtypes.ModuleName], &govGenState)
 
-	govGenState.DepositParams.MinDeposit[0].Denom = cfg.BondDenom
+	govGenState.Params.MinDeposit[0].Denom = cfg.BondDenom
 	cfg.GenesisState[govtypes.ModuleName] = cfg.Codec.MustMarshalJSON(&govGenState)
 
 	var mintGenState mintypes.GenesisState
@@ -295,22 +290,4 @@ func WriteFile(name string, dir string, contents []byte) error {
 	}
 
 	return tmos.WriteFile(file, contents, 0o644)
-}
-
-// Get a free address for a test CometBFT server
-// protocol is either tcp, http, etc
-func FreeTCPAddr() (addr, port string, closeFn func() error, err error) {
-	l, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		return "", "", nil, err
-	}
-
-	closeFn = func() error {
-		return l.Close()
-	}
-
-	portI := l.Addr().(*net.TCPAddr).Port
-	port = fmt.Sprintf("%d", portI)
-	addr = fmt.Sprintf("tcp://0.0.0.0:%s", port)
-	return
 }

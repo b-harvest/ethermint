@@ -32,23 +32,24 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/node"
-	tmclient "github.com/cometbft/cometbft/rpc/client"
-	dbm "github.com/cosmos/cosmos-db"
+	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/simapp"
 	"cosmossdk.io/simapp/params"
 	pruningtypes "cosmossdk.io/store/pruning/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -59,23 +60,46 @@ import (
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/testutil"
+	networktestutil "github.com/cosmos/cosmos-sdk/testutil/network"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/evmos/ethermint/app"
 	"github.com/evmos/ethermint/crypto/hd"
 	"github.com/evmos/ethermint/server/config"
 	ethermint "github.com/evmos/ethermint/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
-
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	"github.com/evmos/ethermint/app"
 )
 
 // network lock to only allow one test network at a time
-var lock = new(sync.Mutex)
+var (
+	lock     = new(sync.Mutex)
+	portPool = make(chan string, 200)
+)
+
+func init() {
+	closeFns := []func() error{}
+	for i := 0; i < 200; i++ {
+		_, port, closeFn, err := networktestutil.FreeTCPAddr()
+		if err != nil {
+			panic(err)
+		}
+
+		portPool <- port
+		closeFns = append(closeFns, closeFn)
+	}
+
+	for _, closeFn := range closeFns {
+		err := closeFn()
+		if err != nil {
+			panic(err)
+		}
+	}
+}
 
 // AppConstructor defines a function which accepts a network configuration and
 // creates an ABCI Application to provide to Tendermint.
@@ -103,31 +127,33 @@ func NewAppConstructor(chainID string) AppConstructor {
 // Config defines the necessary configuration used to bootstrap and start an
 // in-process local testing network.
 type Config struct {
-	KeyringOptions    []keyring.Option // keyring configuration options
 	Codec             codec.Codec
 	LegacyAmino       *codec.LegacyAmino // TODO: Remove!
 	InterfaceRegistry codectypes.InterfaceRegistry
-	TxConfig          client.TxConfig
-	AccountRetriever  client.AccountRetriever
-	AppConstructor    AppConstructor      // the ABCI application constructor
-	GenesisState      simapp.GenesisState // custom gensis state to provide
-	TimeoutCommit     time.Duration       // the consensus commitment timeout
-	AccountTokens     sdkmath.Int         // the amount of unique validator tokens (e.g. 1000node0)
-	StakingTokens     sdkmath.Int         // the amount of tokens each validator has available to stake
-	BondedTokens      sdkmath.Int         // the amount of tokens each validator stakes
-	NumValidators     int                 // the total number of validators to create and bond
-	ChainID           string              // the network chain-id
-	BondDenom         string              // the staking bond denomination
-	MinGasPrices      string              // the minimum gas prices each validator will accept
-	PruningStrategy   string              // the pruning strategy each validator will have
-	SigningAlgo       string              // signing algorithm for keys
-	RPCAddress        string              // RPC listen address (including port)
-	JSONRPCAddress    string              // JSON-RPC listen address (including port)
-	APIAddress        string              // REST API listen address (including port)
-	GRPCAddress       string              // GRPC server listen address (including port)
-	EnableTMLogging   bool                // enable Tendermint logging to STDOUT
-	CleanupDir        bool                // remove base temporary directory during cleanup
-	PrintMnemonic     bool                // print the mnemonic of first validator as log output for testing
+
+	TxConfig         client.TxConfig
+	AccountRetriever client.AccountRetriever
+	AppConstructor   AppConstructor      // the ABCI application constructor
+	GenesisState     simapp.GenesisState // custom gensis state to provide
+	TimeoutCommit    time.Duration       // the consensus commitment timeout
+	ChainID          string              // the network chain-id
+	NumValidators    int                 // the total number of validators to create and bond
+	Mnemonics        []string            // custom user-provided validator operator mnemonics
+	BondDenom        string              // the staking bond denomination
+	MinGasPrices     string              // the minimum gas prices each validator will accept
+	AccountTokens    sdkmath.Int         // the amount of unique validator tokens (e.g. 1000node0)
+	StakingTokens    sdkmath.Int         // the amount of tokens each validator has available to stake
+	BondedTokens     sdkmath.Int         // the amount of tokens each validator stakes
+	PruningStrategy  string              // the pruning strategy each validator will have
+	EnableLogging    bool                // enable logging to STDOUT
+	CleanupDir       bool                // remove base temporary directory during cleanup
+	SigningAlgo      string              // signing algorithm for keys
+	KeyringOptions   []keyring.Option    // keyring configuration options
+	RPCAddress       string              // RPC listen address (including port)
+	JSONRPCAddress   string              // JSON-RPC listen address (including port)
+	APIAddress       string              // REST API listen address (including port)
+	GRPCAddress      string              // GRPC server listen address (including port)
+	PrintMnemonic    bool                // print the mnemonic of first validator as log output for testing
 }
 
 // DefaultConfig returns a sane default configuration suitable for nearly all
@@ -211,32 +237,47 @@ type (
 		P2PAddress    string
 		Address       sdk.AccAddress
 		ValAddress    sdk.ValAddress
-		RPCClient     tmclient.Client
+		RPCClient     tmrpcclient.Client
 		JSONRPCClient *ethclient.Client
 
-		tmNode   *node.Node
-		api      *api.Server
-		grpc     *grpc.Server
-		grpcWeb  *http.Server
-		errGroup *errgroup.Group
-		cancelFn context.CancelFunc
-
+		app         servertypes.Application
+		tmNode      *node.Node
+		api         *api.Server
+		grpc        *grpc.Server
+		grpcWeb     *http.Server
 		jsonrpc     *http.Server
 		jsonrpcDone chan struct{}
+		errGroup    *errgroup.Group
+		cancelFn    context.CancelFunc
+	}
+
+	// ValidatorI expose a validator's context and configuration
+	ValidatorI interface {
+		GetCtx() *server.Context
+		GetAppConfig() *srvconfig.Config
+	}
+
+	// Logger is a network logger interface that exposes testnet-level Log() methods for an in-process testing network
+	// This is not to be confused with logging that may happen at an individual node or validator level
+	Logger interface {
+		Log(args ...interface{})
+		Logf(format string, args ...interface{})
 	}
 )
 
-// Logger is a network logger interface that exposes testnet-level Log() methods for an in-process testing network
-// This is not to be confused with logging that may happen at an individual node or validator level
-type Logger interface {
-	Log(args ...interface{})
-	Logf(format string, args ...interface{})
+var (
+	_ Logger     = (*testing.T)(nil)
+	_ Logger     = (*CLILogger)(nil)
+	_ ValidatorI = Validator{}
+)
+
+func (v Validator) GetCtx() *server.Context {
+	return v.Ctx
 }
 
-var (
-	_ Logger = (*testing.T)(nil)
-	_ Logger = (*CLILogger)(nil)
-)
+func (v Validator) GetAppConfig() *srvconfig.Config {
+	return &v.AppConfig.Config
+}
 
 type CLILogger struct {
 	cmd *cobra.Command
@@ -310,11 +351,11 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			if cfg.APIAddress != "" {
 				apiListenAddr = cfg.APIAddress
 			} else {
-				var err error
-				apiListenAddr, _, _, err = FreeTCPAddr()
-				if err != nil {
-					return nil, err
+				if len(portPool) == 0 {
+					return nil, fmt.Errorf("failed to get port for API server")
 				}
+				port := <-portPool
+				apiListenAddr = fmt.Sprintf("tcp://0.0.0.0:%s", port)
 			}
 
 			appCfg.API.Address = apiListenAddr
@@ -327,33 +368,32 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			if cfg.RPCAddress != "" {
 				tmCfg.RPC.ListenAddress = cfg.RPCAddress
 			} else {
-				rpcAddr, _, _, err := FreeTCPAddr()
-				if err != nil {
-					return nil, err
+				if len(portPool) == 0 {
+					return nil, fmt.Errorf("failed to get port for RPC server")
 				}
-				tmCfg.RPC.ListenAddress = rpcAddr
+				port := <-portPool
+				tmCfg.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%s", port)
 			}
 
 			if cfg.GRPCAddress != "" {
 				appCfg.GRPC.Address = cfg.GRPCAddress
 			} else {
-				_, grpcPort, _, err := FreeTCPAddr()
-				if err != nil {
-					return nil, err
+				if len(portPool) == 0 {
+					return nil, fmt.Errorf("failed to get port for GRPC server")
 				}
-				appCfg.GRPC.Address = fmt.Sprintf("0.0.0.0:%s", grpcPort)
+				port := <-portPool
+				appCfg.GRPC.Address = fmt.Sprintf("0.0.0.0:%s", port)
 			}
 			appCfg.GRPC.Enable = true
-
 			appCfg.GRPCWeb.Enable = true
 
 			if cfg.JSONRPCAddress != "" {
 				appCfg.JSONRPC.Address = cfg.JSONRPCAddress
 			} else {
-				_, jsonRPCPort, _, err := FreeTCPAddr()
-				if err != nil {
-					return nil, err
+				if len(portPool) == 0 {
+					return nil, fmt.Errorf("failed to get port for GRPC server")
 				}
+				jsonRPCPort := <-portPool
 				appCfg.JSONRPC.Address = fmt.Sprintf("127.0.0.1:%s", jsonRPCPort)
 			}
 			appCfg.JSONRPC.Enable = true
@@ -361,8 +401,8 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		}
 
 		logger := log.NewNopLogger()
-		if cfg.EnableTMLogging {
-			logger = log.NewLogger(os.Stdout)
+		if cfg.EnableLogging {
+			logger = log.NewLogger(os.Stdout) // TODO(mr): enable selection of log destination.
 		}
 
 		ctx.Logger = logger
@@ -386,16 +426,18 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		tmCfg.Moniker = nodeDirName
 		monikers[i] = nodeDirName
 
-		proxyAddr, _, _, err := FreeTCPAddr()
-		if err != nil {
-			return nil, err
+		if len(portPool) == 0 {
+			return nil, fmt.Errorf("failed to get port for Proxy server")
 		}
+		port := <-portPool
+		proxyAddr := fmt.Sprintf("tcp://0.0.0.0:%s", port)
 		tmCfg.ProxyApp = proxyAddr
 
-		p2pAddr, _, _, err := FreeTCPAddr()
-		if err != nil {
-			return nil, err
+		if len(portPool) == 0 {
+			return nil, fmt.Errorf("failed to get port for Proxy server")
 		}
+		port = <-portPool
+		p2pAddr := fmt.Sprintf("tcp://0.0.0.0:%s", port)
 		tmCfg.P2P.ListenAddress = p2pAddr
 		tmCfg.P2P.AddrBookStrict = false
 		tmCfg.P2P.AllowDuplicateIP = true
@@ -418,7 +460,12 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
-		addr, secret, err := testutil.GenerateSaveCoinKey(kb, nodeDirName, "", true, algo)
+		var mnemonic string
+		if i < len(cfg.Mnemonics) {
+			mnemonic = cfg.Mnemonics[i]
+		}
+
+		addr, secret, err := testutil.GenerateSaveCoinKey(kb, nodeDirName, mnemonic, true, algo)
 		if err != nil {
 			return nil, err
 		}
@@ -476,7 +523,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		}
 
 		memo := fmt.Sprintf("%s@%s:%s", nodeIDs[i], p2pURL.Hostname(), p2pURL.Port())
-		fee := sdk.NewCoins(sdk.NewCoin(cfg.BondDenom, sdkmath.NewInt(0)))
+		fee := sdk.NewCoins(sdk.NewCoin(cfg.BondDenom, sdkmath.NewInt(0))) // TODO(dudong2)
 		txBuilder := cfg.TxConfig.NewTxBuilder()
 		err = txBuilder.SetMsgs(createValMsg)
 		if err != nil {
@@ -502,7 +549,8 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
-		if err := WriteFile(fmt.Sprintf("%v.json", nodeDirName), gentxsDir, txBz); err != nil {
+		err = WriteFile(fmt.Sprintf("%v.json", nodeDirName), gentxsDir, txBz)
+		if err != nil {
 			return nil, err
 		}
 
@@ -527,6 +575,9 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			WithLegacyAmino(cfg.LegacyAmino).
 			WithTxConfig(cfg.TxConfig).
 			WithAccountRetriever(cfg.AccountRetriever)
+
+		// Provide ChainID here since we can't modify it in the Comet config.
+		// ctx.Viper.Set(flags.FlagChainID, cfg.ChainID) // ! ------------------------------------
 
 		network.Validators[i] = &Validator{
 			AppConfig:  appCfg,
@@ -554,14 +605,19 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 	}
 
 	l.Log("starting test network...")
-	for _, v := range network.Validators {
-		err := startInProcess(cfg, v)
-		if err != nil {
+	for idx, v := range network.Validators {
+		if err := startInProcess(cfg, v); err != nil {
 			return nil, err
 		}
+		l.Log("started validator", idx)
 	}
 
-	l.Log("started test network")
+	height, err := network.LatestHeight()
+	if err != nil {
+		return nil, err
+	}
+
+	l.Log("started test network at height:", height)
 
 	// Ensure we cleanup incase any test was abruptly halted (e.g. SIGINT) as any
 	// defer in a test would not be called.
@@ -601,12 +657,39 @@ func (n *Network) LatestHeight() (int64, error) {
 		return 0, errors.New("no validators available")
 	}
 
-	status, err := n.Validators[0].RPCClient.Status(context.Background())
-	if err != nil {
-		return 0, err
-	}
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 
-	return status.SyncInfo.LatestBlockHeight, nil
+	timeout := time.NewTimer(time.Second * 5)
+	defer timeout.Stop()
+
+	var latestHeight int64
+	val := n.Validators[0]
+	queryClient := cmtservice.NewServiceClient(val.ClientCtx)
+
+	for {
+		select {
+		case <-timeout.C:
+			return latestHeight, errors.New("timeout exceeded waiting for block")
+		case <-ticker.C:
+			done := make(chan struct{})
+			go func() {
+				res, err := queryClient.GetLatestBlock(context.Background(), &cmtservice.GetLatestBlockRequest{})
+				if err == nil && res != nil {
+					latestHeight = res.SdkBlock.Header.Height
+				}
+				done <- struct{}{}
+			}()
+			select {
+			case <-timeout.C:
+				return latestHeight, errors.New("timeout exceeded waiting for block")
+			case <-done:
+				if latestHeight != 0 {
+					return latestHeight, nil
+				}
+			}
+		}
+	}
 }
 
 // WaitForHeight performs a blocking check where it waits for a block to be
@@ -620,7 +703,10 @@ func (n *Network) WaitForHeight(h int64) (int64, error) {
 // provide a custom timeout.
 func (n *Network) WaitForHeightWithTimeout(h int64, t time.Duration) (int64, error) {
 	ticker := time.NewTicker(time.Second)
-	timeout := time.After(t)
+	defer ticker.Stop()
+
+	timeout := time.NewTimer(t)
+	defer timeout.Stop()
 
 	if len(n.Validators) == 0 {
 		return 0, errors.New("no validators available")
@@ -628,22 +714,41 @@ func (n *Network) WaitForHeightWithTimeout(h int64, t time.Duration) (int64, err
 
 	var latestHeight int64
 	val := n.Validators[0]
+	queryClient := cmtservice.NewServiceClient(val.ClientCtx)
 
 	for {
 		select {
-		case <-timeout:
-			ticker.Stop()
+		case <-timeout.C:
 			return latestHeight, errors.New("timeout exceeded waiting for block")
+
 		case <-ticker.C:
-			status, err := val.RPCClient.Status(context.Background())
-			if err == nil && status != nil {
-				latestHeight = status.SyncInfo.LatestBlockHeight
+			res, err := queryClient.GetLatestBlock(context.Background(), &cmtservice.GetLatestBlockRequest{})
+			if err == nil && res != nil {
+				latestHeight = res.GetSdkBlock().Header.Height
 				if latestHeight >= h {
 					return latestHeight, nil
 				}
 			}
 		}
 	}
+}
+
+// RetryForBlocks will wait for the next block and execute the function provided.
+// It will do this until the function returns a nil error or until the number of
+// blocks has been reached.
+func (n *Network) RetryForBlocks(retryFunc func() error, blocks int) error {
+	for i := 0; i < blocks; i++ {
+		n.WaitForNextBlock()
+		err := retryFunc()
+		if err == nil {
+			return nil
+		}
+		// we've reached the last block to wait, return the error
+		if i == blocks-1 {
+			return err
+		}
+	}
+	return nil
 }
 
 // WaitForNextBlock waits for the next block to be committed, returning an error
@@ -693,21 +798,14 @@ func (n *Network) Cleanup() {
 			_ = v.grpcWeb.Close()
 		}
 
-		if v.jsonrpc != nil {
-			shutdownCtx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancelFn()
-
-			if err := v.jsonrpc.Shutdown(shutdownCtx); err != nil {
-				v.tmNode.Logger.Error("HTTP server shutdown produced a warning", "error", err.Error())
-			} else {
-				v.tmNode.Logger.Info("HTTP server shut down, waiting 5 sec")
-				select {
-				case <-time.Tick(5 * time.Second):
-				case <-v.jsonrpcDone:
-				}
+		if v.app != nil {
+			if err := v.app.Close(); err != nil {
+				n.Logger.Log("failed to stop validator ABCI application", "err", err)
 			}
 		}
 	}
+
+	time.Sleep(100 * time.Millisecond)
 
 	if n.Config.CleanupDir {
 		_ = os.RemoveAll(n.BaseDir)
