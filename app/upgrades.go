@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
+	circuittypes "cosmossdk.io/x/circuit/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -34,6 +35,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -49,6 +51,7 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 	cdc codec.BinaryCodec,
 	clientKeeper clientkeeper.Keeper,
 	consensusParamsKeeper consensusparamskeeper.Keeper,
+	paramsKeeper paramskeeper.Keeper,
 ) {
 	planName := "integration-test-upgrade"
 	// Set param key table for params module migration
@@ -90,33 +93,49 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 		planName,
 		func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 			sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+			// ibc v7
 			// OPTIONAL: prune expired tendermint consensus states to save storage space
 			if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, clientKeeper); err != nil {
 				return nil, err
 			}
+
+			legacyBaseAppSubspace := paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
+			baseapp.MigrateParams(sdkCtx, legacyBaseAppSubspace, &consensusParamsKeeper.ParamsStore)
+
+			// ibc v7.1
 			// explicitly update the IBC 02-client params, adding the localhost client type
 			params := clientKeeper.GetParams(sdkCtx)
 			params.AllowedClients = append(params.AllowedClients, exported.Localhost)
 			clientKeeper.SetParams(sdkCtx, params)
+
+			// cosmos-sdk v047
 			// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
 			err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, consensusParamsKeeper.ParamsStore)
 			if err != nil {
 				return nil, err
 			}
+
 			return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		},
 	)
+
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
 	}
+
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
+				// cosmos-sdk v047
 				consensusparamtypes.StoreKey,
 				crisistypes.StoreKey,
+				// cosmos-sdk v050
+				circuittypes.ModuleName,
 			},
 		}
+
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
 }
