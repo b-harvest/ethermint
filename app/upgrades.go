@@ -101,7 +101,9 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 			}
 
 			legacyBaseAppSubspace := paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
-			baseapp.MigrateParams(sdkCtx, legacyBaseAppSubspace, &consensusParamsKeeper.ParamsStore)
+			if err := baseapp.MigrateParams(sdkCtx, legacyBaseAppSubspace, &consensusParamsKeeper.ParamsStore); err != nil {
+				return nil, err
+			}
 
 			// ibc v7.1
 			// explicitly update the IBC 02-client params, adding the localhost client type

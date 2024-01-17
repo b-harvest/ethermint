@@ -39,8 +39,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -62,8 +60,6 @@ func initRootCmd(
 	encodingConfig params.EncodingConfig,
 	rootCmd *cobra.Command,
 	txConfig client.TxConfig,
-	interfaceRegistry codectypes.InterfaceRegistry,
-	appCodec codec.Codec,
 	basicManager module.BasicManager,
 ) {
 	cfg := sdk.GetConfig()
@@ -266,13 +262,33 @@ func (a appCreator) appExport(
 	}
 
 	if height != -1 {
-		ethermintApp = ethermintapp.NewEthermintApp(logger, db, traceStore, false, map[int64]bool{}, "", uint(1), appOpts, baseapp.SetChainID(ethermintapp.ChainID))
+		ethermintApp = ethermintapp.NewEthermintApp(
+			logger,
+			db,
+			traceStore,
+			false,
+			map[int64]bool{},
+			"",
+			uint(1),
+			appOpts,
+			baseapp.SetChainID(ethermintapp.ChainID),
+		)
 
 		if err := ethermintApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		ethermintApp = ethermintapp.NewEthermintApp(logger, db, traceStore, true, map[int64]bool{}, "", uint(1), appOpts, baseapp.SetChainID(ethermintapp.ChainID))
+		ethermintApp = ethermintapp.NewEthermintApp(
+			logger,
+			db,
+			traceStore,
+			true,
+			map[int64]bool{},
+			"",
+			uint(1),
+			appOpts,
+			baseapp.SetChainID(ethermintapp.ChainID),
+		)
 	}
 
 	return ethermintApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)

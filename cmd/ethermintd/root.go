@@ -133,7 +133,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	// TODO: double-check
 	// authclient.Codec = encodingConfig.Codec
 
-	initRootCmd(tempApp, encodingConfig, rootCmd, encodingConfig.TxConfig, encodingConfig.InterfaceRegistry, encodingConfig.Codec, tempApp.BasicModuleManager)
+	initRootCmd(tempApp, encodingConfig, rootCmd, encodingConfig.TxConfig, tempApp.BasicModuleManager)
 
 	autoCliOpts := tempApp.AutoCliOpts()
 	initClientCtx, _ = config.ReadFromClientConfig(initClientCtx)
