@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import re
 from eth_bloom import BloomFilter
 from eth_utils import abi, big_endian_to_int
 from hexbytes import HexBytes
@@ -78,7 +79,10 @@ def test_pruned_node(pruned):
     )
     assert "error" in pruned_res
     assert (
-        pruned_res["error"]["message"] == "couldn't fetch balance. Node state is pruned"
+        re.match(
+            r"rpc error: code = Unknown desc = codespace sdk code 18: invalid request: failed to load state at height \d+; version mismatch on immutable IAVL tree; version does not exist. Version has either been pruned, or is for a future block height \(latest height: \d+\)",
+            pruned_res["error"]["message"],
+        )
     )
 
     with pytest.raises(Exception):
