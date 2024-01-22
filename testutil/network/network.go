@@ -49,6 +49,7 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -75,7 +76,7 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
-// network lock to only allow one test network at a time
+// package-wide network lock to only allow one test network at a time
 var (
 	lock     = new(sync.Mutex)
 	portPool = make(chan string, 200)
@@ -102,7 +103,7 @@ func init() {
 }
 
 // AppConstructor defines a function which accepts a network configuration and
-// creates an ABCI Application to provide to Tendermint.
+// creates an ABCI Application to provide to CometBFT.
 type AppConstructor = func(val Validator) servertypes.Application
 
 // NewAppConstructor returns a new simapp AppConstructor
@@ -337,13 +338,13 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		appCfg.Telemetry.GlobalLabels = [][]string{{"chain_id", cfg.ChainID}}
 
 		ctx := server.NewDefaultContext()
-		tmCfg := ctx.Config
-		tmCfg.Consensus.TimeoutCommit = cfg.TimeoutCommit
+		cmtCfg := ctx.Config
+		cmtCfg.Consensus.TimeoutCommit = cfg.TimeoutCommit
 
 		// Only allow the first validator to expose an RPC, API and gRPC
 		// server/client due to Tendermint in-process constraints.
 		apiAddr := ""
-		tmCfg.RPC.ListenAddress = ""
+		cmtCfg.RPC.ListenAddress = ""
 		appCfg.GRPC.Enable = false
 		appCfg.GRPCWeb.Enable = false
 		apiListenAddr := ""
@@ -366,13 +367,13 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			apiAddr = fmt.Sprintf("http://%s:%s", apiURL.Hostname(), apiURL.Port())
 
 			if cfg.RPCAddress != "" {
-				tmCfg.RPC.ListenAddress = cfg.RPCAddress
+				cmtCfg.RPC.ListenAddress = cfg.RPCAddress
 			} else {
 				if len(portPool) == 0 {
 					return nil, fmt.Errorf("failed to get port for RPC server")
 				}
 				port := <-portPool
-				tmCfg.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%s", port)
+				cmtCfg.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%s", port)
 			}
 
 			if cfg.GRPCAddress != "" {
@@ -422,8 +423,8 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
-		tmCfg.SetRoot(nodeDir)
-		tmCfg.Moniker = nodeDirName
+		cmtCfg.SetRoot(nodeDir)
+		cmtCfg.Moniker = nodeDirName
 		monikers[i] = nodeDirName
 
 		if len(portPool) == 0 {
@@ -431,18 +432,18 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		}
 		port := <-portPool
 		proxyAddr := fmt.Sprintf("tcp://0.0.0.0:%s", port)
-		tmCfg.ProxyApp = proxyAddr
+		cmtCfg.ProxyApp = proxyAddr
 
 		if len(portPool) == 0 {
 			return nil, fmt.Errorf("failed to get port for Proxy server")
 		}
 		port = <-portPool
 		p2pAddr := fmt.Sprintf("tcp://0.0.0.0:%s", port)
-		tmCfg.P2P.ListenAddress = p2pAddr
-		tmCfg.P2P.AddrBookStrict = false
-		tmCfg.P2P.AllowDuplicateIP = true
+		cmtCfg.P2P.ListenAddress = p2pAddr
+		cmtCfg.P2P.AddrBookStrict = false
+		cmtCfg.P2P.AllowDuplicateIP = true
 
-		nodeID, pubKey, err := genutil.InitializeNodeValidatorFiles(tmCfg)
+		nodeID, pubKey, err := genutil.InitializeNodeValidatorFiles(cmtCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -493,7 +494,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			sdk.NewCoin(cfg.BondDenom, cfg.StakingTokens),
 		)
 
-		genFiles = append(genFiles, tmCfg.GenesisFile())
+		genFiles = append(genFiles, cmtCfg.GenesisFile())
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: balances.Sort()})
 		genAccounts = append(genAccounts, &ethermint.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(addr, nil, 0, 0),
@@ -523,7 +524,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		}
 
 		memo := fmt.Sprintf("%s@%s:%s", nodeIDs[i], p2pURL.Hostname(), p2pURL.Port())
-		fee := sdk.NewCoins(sdk.NewCoin(cfg.BondDenom, sdkmath.NewInt(0))) // TODO(dudong2)
+		fee := sdk.NewCoins(sdk.NewCoin(cfg.BondDenom, sdkmath.NewInt(0)))
 		txBuilder := cfg.TxConfig.NewTxBuilder()
 		err = txBuilder.SetMsgs(createValMsg)
 		if err != nil {
@@ -568,7 +569,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		clientCtx := client.Context{}.
 			WithKeyringDir(clientDir).
 			WithKeyring(kb).
-			WithHomeDir(tmCfg.RootDir).
+			WithHomeDir(cmtCfg.RootDir).
 			WithChainID(cfg.ChainID).
 			WithInterfaceRegistry(cfg.InterfaceRegistry).
 			WithCodec(cfg.Codec).
@@ -577,7 +578,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			WithAccountRetriever(cfg.AccountRetriever)
 
 		// Provide ChainID here since we can't modify it in the Comet config.
-		// ctx.Viper.Set(flags.FlagChainID, cfg.ChainID) // ! ------------------------------------
+		ctx.Viper.Set(flags.FlagChainID, cfg.ChainID)
 
 		network.Validators[i] = &Validator{
 			AppConfig:  appCfg,
@@ -587,8 +588,8 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			NodeID:     nodeID,
 			PubKey:     pubKey,
 			Moniker:    nodeDirName,
-			RPCAddress: tmCfg.RPC.ListenAddress,
-			P2PAddress: tmCfg.P2P.ListenAddress,
+			RPCAddress: cmtCfg.RPC.ListenAddress,
+			P2PAddress: cmtCfg.P2P.ListenAddress,
 			APIAddress: apiAddr,
 			Address:    addr,
 			ValAddress: sdk.ValAddress(addr),
@@ -771,7 +772,7 @@ func (n *Network) WaitForNextBlock() error {
 }
 
 // Cleanup removes the root testing (temporary) directory and stops both the
-// Tendermint and API services. It allows other callers to create and start
+// CometBFT and API services. It allows other callers to create and start
 // test networks. This method must be called when a test is finished, typically
 // in a defer.
 func (n *Network) Cleanup() {

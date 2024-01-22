@@ -19,10 +19,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 
-	tmcfg "github.com/cometbft/cometbft/config"
-	tmos "github.com/cometbft/cometbft/libs/os"
+	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	pvm "github.com/cometbft/cometbft/privval"
@@ -55,14 +55,14 @@ import (
 
 func startInProcess(cfg Config, val *Validator) error {
 	logger := val.Ctx.Logger
-	tmCfg := val.Ctx.Config
-	tmCfg.Instrumentation.Prometheus = false
+	cmtCfg := val.Ctx.Config
+	cmtCfg.Instrumentation.Prometheus = false
 
 	if err := val.AppConfig.ValidateBasic(); err != nil {
 		return err
 	}
 
-	nodeKey, err := p2p.LoadOrGenNodeKey(tmCfg.NodeKeyFile())
+	nodeKey, err := p2p.LoadOrGenNodeKey(cmtCfg.NodeKeyFile())
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func startInProcess(cfg Config, val *Validator) error {
 	val.app = app
 
 	appGenesisProvider := func() (*types.GenesisDoc, error) {
-		appGenesis, err := genutiltypes.AppGenesisFromFile(tmCfg.GenesisFile())
+		appGenesis, err := genutiltypes.AppGenesisFromFile(cmtCfg.GenesisFile())
 		if err != nil {
 			return nil, err
 		}
@@ -81,13 +81,13 @@ func startInProcess(cfg Config, val *Validator) error {
 
 	cmtApp := server.NewCometABCIWrapper(app)
 	tmNode, err := node.NewNode( //resleak:notresource
-		tmCfg,
-		pvm.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile()),
+		cmtCfg,
+		pvm.LoadOrGenFilePV(cmtCfg.PrivValidatorKeyFile(), cmtCfg.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.NewLocalClientCreator(cmtApp),
 		appGenesisProvider,
-		tmcfg.DefaultDBProvider,
-		node.DefaultMetricsProvider(tmCfg.Instrumentation),
+		cmtcfg.DefaultDBProvider,
+		node.DefaultMetricsProvider(cmtCfg.Instrumentation),
 		servercmtlog.CometLoggerWrapper{Logger: logger.With("module", val.Moniker)},
 	)
 	if err != nil {
@@ -140,7 +140,7 @@ func startInProcess(cfg Config, val *Validator) error {
 	}
 
 	if val.APIAddress != "" {
-		apiSrv := api.New(val.ClientCtx, logger.With("module", "api-server"), val.grpc)
+		apiSrv := api.New(val.ClientCtx, logger.With(log.ModuleKey, "api-server"), val.grpc)
 		app.RegisterAPIRoutes(apiSrv, val.AppConfig.API)
 
 		val.errGroup.Go(func() error {
@@ -157,6 +157,7 @@ func startInProcess(cfg Config, val *Validator) error {
 
 		tmEndpoint := "/websocket"
 		tmRPCAddr := val.RPCAddress
+
 		val.jsonrpc, val.jsonrpcDone, err = server.StartJSONRPC(val.Ctx, val.ClientCtx, tmRPCAddr, tmEndpoint, val.AppConfig, nil)
 		if err != nil {
 			return err
@@ -177,25 +178,26 @@ func collectGenFiles(cfg Config, vals []*Validator, outputDir string) error {
 	genTime := tmtime.Now()
 
 	for i := 0; i < cfg.NumValidators; i++ {
-		tmCfg := vals[i].Ctx.Config
+		cmtCfg := vals[i].Ctx.Config
 
 		nodeDir := filepath.Join(outputDir, vals[i].Moniker, "evmosd")
 		gentxsDir := filepath.Join(outputDir, "gentxs")
 
-		tmCfg.Moniker = vals[i].Moniker
-		tmCfg.SetRoot(nodeDir)
+		cmtCfg.Moniker = vals[i].Moniker
+		cmtCfg.SetRoot(nodeDir)
 
 		initCfg := genutiltypes.NewInitConfig(cfg.ChainID, gentxsDir, vals[i].NodeID, vals[i].PubKey)
 
-		genFile := tmCfg.GenesisFile()
+		genFile := cmtCfg.GenesisFile()
 		appGenesis, err := genutiltypes.AppGenesisFromFile(genFile)
 		if err != nil {
 			return err
 		}
 
 		appState, err := genutil.GenAppStateFromConfig(
-			cfg.Codec, cfg.TxConfig,
-			tmCfg,
+			cfg.Codec,
+			cfg.TxConfig,
+			cmtCfg,
 			initCfg,
 			appGenesis,
 			banktypes.GenesisBalancesIterator{},
@@ -288,13 +290,16 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 	return nil
 }
 
-func WriteFile(name string, dir string, contents []byte) error {
+func WriteFile(name, dir string, contents []byte) error {
 	file := filepath.Join(dir, name)
 
-	err := tmos.EnsureDir(dir, 0o755)
-	if err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("could not create directory %q: %w", dir, err)
+	}
+
+	if err := os.WriteFile(file, contents, 0o600); err != nil {
 		return err
 	}
 
-	return tmos.WriteFile(file, contents, 0o644)
+	return nil
 }
