@@ -16,8 +16,11 @@
 package server
 
 import (
+	"io"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/evmos/ethermint/server/config"
@@ -27,6 +30,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	log "cosmossdk.io/log"
+	dbm "github.com/cosmos/cosmos-db"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -38,7 +42,8 @@ import (
 // AddCommands adds server commands
 func AddCommands(
 	rootCmd *cobra.Command,
-	opts StartOptions,
+	defaultNodeHome string,
+	appCreator types.AppCreator,
 	appExport types.AppExporter,
 	addStartFlags types.ModuleInitFlags,
 ) {
@@ -56,15 +61,15 @@ func AddCommands(
 		tmcmd.ResetStateCmd,
 	)
 
-	startCmd := StartCmd(opts)
+	startCmd := StartCmd(appCreator, defaultNodeHome)
 	addStartFlags(startCmd)
 
 	rootCmd.AddCommand(
 		startCmd,
 		tendermintCmd,
-		sdkserver.ExportCmd(appExport, opts.DefaultNodeHome),
+		sdkserver.ExportCmd(appExport, defaultNodeHome),
 		version.NewVersionCommand(),
-		sdkserver.NewRollbackCmd(opts.AppCreator, opts.DefaultNodeHome),
+		sdkserver.NewRollbackCmd(appCreator, defaultNodeHome),
 
 		// custom tx indexer command
 		NewIndexTxCmd(),
@@ -137,4 +142,28 @@ func Listen(addr string, config *config.Config) (net.Listener, error) {
 		ln = netutil.LimitListener(ln, config.JSONRPC.MaxOpenConnections)
 	}
 	return ln, err
+}
+
+func openDB(_ types.AppOptions, rootDir string, backendType dbm.BackendType) (dbm.DB, error) {
+	dataDir := filepath.Join(rootDir, "data")
+	return dbm.NewDB("application", backendType, dataDir)
+}
+
+// OpenIndexerDB opens the custom eth indexer db, using the same db backend as the main app
+func OpenIndexerDB(rootDir string, backendType dbm.BackendType) (dbm.DB, error) {
+	dataDir := filepath.Join(rootDir, "data")
+	return dbm.NewDB("evmindexer", backendType, dataDir)
+}
+
+func openTraceWriter(traceWriterFile string) (w io.WriteCloser, err error) {
+	if traceWriterFile == "" {
+		return
+	}
+
+	filePath := filepath.Clean(traceWriterFile)
+	return os.OpenFile(
+		filePath,
+		os.O_WRONLY|os.O_APPEND|os.O_CREATE,
+		0o600,
+	)
 }

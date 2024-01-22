@@ -91,7 +91,7 @@ func initRootCmd(
 	)
 
 	a := appCreator{}
-	server.AddCommands(rootCmd, server.NewDefaultStartOptions(a.newApp, ethermintapp.DefaultNodeHome), a.appExport, addModuleInitFlags)
+	server.AddCommands(rootCmd, ethermintapp.DefaultNodeHome, a.newApp, a.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
