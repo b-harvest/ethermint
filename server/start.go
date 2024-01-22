@@ -268,7 +268,14 @@ func start(svrCtx *server.Context, clientCtx client.Context, appCreator types.Ap
 	return startInProcess(svrCtx, svrCfg, clientCtx, app, metrics, opts)
 }
 
-func startStandAlone(svrCtx *server.Context, svrCfg config.Config, clientCtx client.Context, app types.Application, metrics *telemetry.Metrics, opts StartCmdOptions) error {
+func startStandAlone(
+	svrCtx *server.Context,
+	svrCfg config.Config,
+	clientCtx client.Context,
+	app types.Application,
+	metrics *telemetry.Metrics,
+	_ StartCmdOptions,
+) error {
 	addr := svrCtx.Viper.GetString(srvflags.Address)
 	transport := svrCtx.Viper.GetString(srvflags.Transport)
 
@@ -329,7 +336,14 @@ func startStandAlone(svrCtx *server.Context, svrCfg config.Config, clientCtx cli
 }
 
 // legacyAminoCdc is used for the legacy REST API
-func startInProcess(svrCtx *server.Context, svrCfg config.Config, clientCtx client.Context, app types.Application, metrics *telemetry.Metrics, opts StartCmdOptions) (err error) {
+func startInProcess(
+	svrCtx *server.Context,
+	svrCfg config.Config,
+	clientCtx client.Context,
+	app types.Application,
+	metrics *telemetry.Metrics,
+	opts StartCmdOptions,
+) (err error) {
 	cmtCfg := svrCtx.Config
 	home := cmtCfg.RootDir
 
@@ -480,13 +494,14 @@ func startInProcess(svrCtx *server.Context, svrCfg config.Config, clientCtx clie
 		}()
 	}
 
-	// At this point it is safe to block the process if we're in query only mode as
-	// we do not need to start Rosetta or handle any Tendermint related processes.
-	if gRPCOnly {
-		// wait for signal capture and gracefully return
-		return g.Wait()
+	if opts.PostSetup != nil {
+		if err := opts.PostSetup(svrCtx, clientCtx, ctx, g); err != nil {
+			return err
+		}
 	}
 
+	// wait for signal capture and gracefully return
+	// we are guaranteed to be waiting for the "ListenForQuitSignals" goroutine.
 	return g.Wait()
 }
 
