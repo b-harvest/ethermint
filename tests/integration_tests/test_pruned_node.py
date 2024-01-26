@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-import re
 from eth_bloom import BloomFilter
 from eth_utils import abi, big_endian_to_int
 from hexbytes import HexBytes
@@ -79,7 +78,7 @@ def test_pruned_node(pruned):
     )
     assert "error" in pruned_res
     assert (
-        "Version has either been pruned, or is for a future block height" in 
+        "Version has either been pruned, or is for a future block height" in
         pruned_res["error"]["message"]
     )
 

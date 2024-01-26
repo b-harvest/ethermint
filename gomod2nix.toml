@@ -47,6 +47,9 @@ schema = 3
   [mod."cosmossdk.io/store"]
     version = "v1.0.0"
     hash = "sha256-AtMupjuK3ccb/GTtxa+NBTufvLjiGljb2RAxuDLkFaw="
+  [mod."cosmossdk.io/tools/confix"]
+    version = "v0.1.0"
+    hash = "sha256-PvIYbcjsATI+gP0+efJZjlGhaClx4SNfadlVY3Ok9TE="
   [mod."cosmossdk.io/x/circuit"]
     version = "v0.1.0"
     hash = "sha256-yTy3jmjWin+imBvgGeJix4SE818/4fQjKgSUYZNiNnw="
@@ -189,6 +192,12 @@ schema = 3
   [mod."github.com/cosmos/rosetta-sdk-go"]
     version = "v0.10.0"
     hash = "sha256-WmLq9E9mYV+ms6Tdb43lCoAy6cowkDnK4bvX/ApDzLY="
+  [mod."github.com/creachadair/atomicfile"]
+    version = "v0.3.1"
+    hash = "sha256-GEp1gRxKfBYI6K0XbElcVYcJMPu6eeLufaYxr7Z0MAQ="
+  [mod."github.com/creachadair/tomledit"]
+    version = "v0.0.24"
+    hash = "sha256-4vUukHONOjNn0qfQr4esK6TWfPWsIp+rbdz65og84lw="
   [mod."github.com/danieljoos/wincred"]
     version = "v1.2.0"
     hash = "sha256-LHcvTJCc8++bFndbd8ZgMSTe4L5h2C4rN+cSWHCz54Y="
