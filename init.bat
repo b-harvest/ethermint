@@ -30,8 +30,8 @@ go build .\cmd\ethermintd
 @echo clear home folder
 del /s /q %HOME%
 
-ethermintd config keyring-backend %KEYRING%
-ethermintd config chain-id %CHAINID%
+ethermintd config set client keyring-backend %KEYRING%
+ethermintd config set client chain-id %CHAINID%
 
 ethermintd keys add %KEY% --keyring-backend %KEYRING% --algo %KEYALGO%
 

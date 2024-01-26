@@ -18,8 +18,8 @@ rm -rf ~/.ethermintd*
 
 make install
 
-ethermintd config keyring-backend $KEYRING
-ethermintd config chain-id $CHAINID
+ethermintd config set client chain-id $CHAINID
+ethermintd config set client keyring-backend $KEYRING
 
 # if $KEY exists it should be deleted
 ethermintd keys add $KEY --keyring-backend $KEYRING --algo $KEYALGO

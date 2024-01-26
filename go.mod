@@ -13,6 +13,7 @@ require (
 	cosmossdk.io/math v1.2.0
 	cosmossdk.io/simapp v0.0.0-20231103111158-e83a20081ced
 	cosmossdk.io/store v1.0.0
+	cosmossdk.io/tools/confix v0.1.0
 	cosmossdk.io/x/circuit v0.1.0
 	cosmossdk.io/x/evidence v0.1.0
 	cosmossdk.io/x/feegrant v0.1.0
@@ -47,6 +48,7 @@ require (
 	github.com/rs/cors v1.10.1
 	github.com/spf13/cast v1.5.1
 	github.com/spf13/cobra v1.8.0
+	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.17.0
 	github.com/status-im/keycard-go v0.2.0
 	github.com/stretchr/testify v1.8.4
@@ -100,6 +102,8 @@ require (
 	github.com/cosmos/ics23/go v0.10.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.13.3 // indirect
 	github.com/cosmos/rosetta-sdk-go v0.10.0 // indirect
+	github.com/creachadair/atomicfile v0.3.1 // indirect
+	github.com/creachadair/tomledit v0.0.24 // indirect
 	github.com/danieljoos/wincred v1.2.0 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
@@ -201,7 +205,6 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.10.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect

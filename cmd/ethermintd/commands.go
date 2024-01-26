@@ -33,12 +33,15 @@ import (
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	storetypes "cosmossdk.io/store/types"
+	confixcmd "cosmossdk.io/tools/confix/cmd"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -65,6 +68,8 @@ func initRootCmd(
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
+	a := appCreator{}
+
 	rootCmd.AddCommand(
 		ethermintclient.ValidateChainID(
 			genutilcli.InitCmd(app.BasicModuleManager, ethermintapp.DefaultNodeHome),
@@ -88,9 +93,11 @@ func initRootCmd(
 		tmcli.NewCompletionCmd(rootCmd, true),
 		ethermintclient.NewTestnetCmd(app.BasicModuleManager, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
+		confixcmd.ConfigCommand(),
+		pruning.Cmd(a.newApp, ethermintapp.DefaultNodeHome),
+		snapshot.Cmd(a.newApp),
 	)
 
-	a := appCreator{}
 	server.AddCommands(rootCmd, ethermintapp.DefaultNodeHome, a.newApp, a.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
