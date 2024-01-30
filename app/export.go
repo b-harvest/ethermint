@@ -175,6 +175,9 @@ func (app *EthermintApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAd
 		}
 		return false
 	})
+	if err != nil {
+		panic(err)
+	}
 
 	// reinitialize all delegations
 	for _, del := range dels {

@@ -44,21 +44,14 @@ import (
 var (
 	txEvents     = tmtypes.QueryForEvent(tmtypes.EventTx).String()
 	headerEvents = tmtypes.QueryForEvent(tmtypes.EventNewBlockHeader).String()
-	evmEvents    string
+	evmEvents    = tmquery.MustCompile(
+		fmt.Sprintf("%s='%s' AND %s.%s='%s'",
+			tmtypes.EventTypeKey,
+			tmtypes.EventTx,
+			sdk.EventTypeMessage,
+			sdk.AttributeKeyModule, evmtypes.ModuleName),
+	).String()
 )
-
-func init() {
-	s := fmt.Sprintf("%s='%s' AND %s.%s='%s'",
-		tmtypes.EventTypeKey,
-		tmtypes.EventTx,
-		sdk.EventTypeMessage,
-		sdk.AttributeKeyModule, evmtypes.ModuleName)
-	q, err := tmquery.New(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse %s: %v", s, err))
-	}
-	evmEvents = q.String()
-}
 
 // EventSystem creates subscriptions, processes events and broadcasts them to the
 // subscription which match the subscription criteria using the Tendermint's RPC client.
