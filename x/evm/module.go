@@ -93,10 +93,10 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.GetTxCmd()
 }
 
-// // GetQueryCmd returns no root query command for the evm module.
-// func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-// 	return cli.GetQueryCmd()
-// }
+// GetQueryCmd returns no root query command for the evm module.
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd()
+}
 
 // RegisterInterfaces registers interfaces and implementations of the evm module.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {

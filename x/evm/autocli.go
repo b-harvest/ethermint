@@ -19,20 +19,6 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Long:      "Get the evm parameter values.",
 				},
 				{
-					RpcMethod:      "Code",
-					Use:            "code ADDRESS",
-					Short:          "Gets code from an account",
-					Long:           "Gets code from an account. If the height is not provided, it will use the latest height from context.",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "address"}},
-				},
-				{
-					RpcMethod:      "Storage",
-					Use:            "storage ADDRESS KEY",
-					Short:          "Gets storage for an account with a given key and height",
-					Long:           "Gets storage for an account with a given key and height. If the height is not provided, it will use the latest height from context.", //nolint:lll
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "address"}, {ProtoField: "key"}},
-				},
-				{
 					RpcMethod: "Account",
 					Skip:      true,
 				},
