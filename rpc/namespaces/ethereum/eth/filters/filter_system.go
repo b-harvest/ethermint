@@ -44,6 +44,7 @@ import (
 var (
 	txEvents     = tmtypes.QueryForEvent(tmtypes.EventTx).String()
 	headerEvents = tmtypes.QueryForEvent(tmtypes.EventNewBlockHeader).String()
+	blockEvents  = tmtypes.QueryForEvent(tmtypes.EventNewBlock).String()
 	evmEvents    = tmquery.MustCompile(
 		fmt.Sprintf("%s='%s' AND %s.%s='%s'",
 			tmtypes.EventTypeKey,
@@ -214,6 +215,20 @@ func (es EventSystem) SubscribeNewHeads() (*Subscription, pubsub.UnsubscribeFunc
 		id:        rpc.NewID(),
 		typ:       filters.BlocksSubscription,
 		event:     headerEvents,
+		created:   time.Now().UTC(),
+		headers:   make(chan *ethtypes.Header),
+		installed: make(chan struct{}, 1),
+		err:       make(chan error, 1),
+	}
+	return es.subscribe(sub)
+}
+
+// SubscribeNewHeads subscribes to new block headers events.
+func (es EventSystem) SubscribeNewBlocks() (*Subscription, pubsub.UnsubscribeFunc, error) {
+	sub := &Subscription{
+		id:        rpc.NewID(),
+		typ:       filters.BlocksSubscription,
+		event:     blockEvents,
 		created:   time.Now().UTC(),
 		headers:   make(chan *ethtypes.Header),
 		installed: make(chan struct{}, 1),
