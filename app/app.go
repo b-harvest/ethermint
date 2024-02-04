@@ -126,7 +126,9 @@ import (
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee"
 	ibcfeekeeper "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/keeper"
+	ibcfeetypes "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types"
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
@@ -176,6 +178,7 @@ var (
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		ibcfeetypes.ModuleName:         nil,
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		nft.ModuleName:                 nil,
 	}
@@ -332,7 +335,7 @@ func NewEthermintApp(
 		evidencetypes.StoreKey, circuittypes.StoreKey,
 		authzkeeper.StoreKey, nftkeeper.StoreKey, group.StoreKey,
 		// ibc keys
-		ibcexported.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
+		ibcexported.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey, ibcfeetypes.StoreKey,
 		// ethermint keys
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 	)
@@ -563,7 +566,19 @@ func NewEthermintApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// Create Transfer Keepers
+	// IBC Fee Module keeper
+	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
+		appCodec, keys[ibcfeetypes.StoreKey],
+		app.IBCKeeper.ChannelKeeper, // may be replaced with IBC middleware
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.PortKeeper, app.AccountKeeper, app.BankKeeper,
+	)
+
+	// Create IBC Router
+	ibcRouter := porttypes.NewRouter()
+
+	// Create Transfer Keeper and pass IBCFeeKeeper as expected Channel and PortKeeper
+	// since fee middleware will wrap the IBCKeeper for underlying application.
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCFeeKeeper, // ISC4 Wrapper: fee IBC middleware
@@ -571,12 +586,27 @@ func NewEthermintApp(
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
 
-	// Create static IBC router, add transfer route, then set and seal it
-	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
+	// Create Transfer Stack
+	// SendPacket, since it is originating from the application to core IBC:
+	// transferKeeper.SendPacket -> fee.SendPacket -> channel.SendPacket
+
+	// RecvPacket, message that originates from core IBC and goes down to app, the flow is the other way
+	// channel.RecvPacket -> fee.OnRecvPacket -> transfer.OnRecvPacket
+
+	// transfer stack contains (from top to bottom):
+	// - IBC Fee Middleware
+	// - Transfer
+
+	// create IBC module from bottom to top of stack
+	var transferStack porttypes.IBCModule
+	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = ibcfee.NewIBCMiddleware(transferStack, app.IBCFeeKeeper)
+
+	// Add transfer stack to IBC Router
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
+
+	// Seal the IBC Router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// Create Ethermint keepers
@@ -638,7 +668,8 @@ func NewEthermintApp(
 
 		// ibc modules
 		ibc.NewAppModule(app.IBCKeeper),
-		transferModule,
+		transfer.NewAppModule(app.TransferKeeper),
+		ibcfee.NewAppModule(app.IBCFeeKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 
 		// Ethermint app modules
@@ -690,6 +721,7 @@ func NewEthermintApp(
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibcfeetypes.ModuleName,
 		feegrant.ModuleName,
 		nft.ModuleName,
 		group.ModuleName,
@@ -713,6 +745,7 @@ func NewEthermintApp(
 		stakingtypes.ModuleName,
 		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibcfeetypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -756,6 +789,7 @@ func NewEthermintApp(
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		authz.ModuleName,
+		ibcfeetypes.ModuleName,
 		feegrant.ModuleName,
 		nft.ModuleName,
 		group.ModuleName,
@@ -1116,8 +1150,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govv1.ParamKeyTable()) //nolint: staticcheck
 	paramsKeeper.Subspace(crisistypes.ModuleName)
+	paramsKeeper.Subspace(ibcexported.ModuleName) // TODO(dudong2): withkeytable
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(ibcexported.ModuleName)
 	// ethermint subspaces
 	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable()) //nolint:staticcheck
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
