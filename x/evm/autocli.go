@@ -10,7 +10,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 	return &autocliv1.ModuleOptions{
 		Query: &autocliv1.ServiceCommandDescriptor{
 			Service:              evmv1.Query_ServiceDesc.ServiceName,
-			EnhanceCustomCommand: false,
+			EnhanceCustomCommand: true, // We provide custom Storage and Code in client/cli/tx.go
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "Params",
@@ -58,7 +58,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
 			Service:              evmv1.Msg_ServiceDesc.ServiceName,
-			EnhanceCustomCommand: true, // We provide costom RawTx in client/cli/tx.go
+			EnhanceCustomCommand: true, // We provide custom RawTx in client/cli/tx.go
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "UpdateParams",
