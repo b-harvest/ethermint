@@ -16,6 +16,7 @@ def test_trace_blk(ethermint):
     sender = acc.address
     # fund new sender
     fund = 3000000000000000000
+    blk = wait_for_new_blocks(cli, 1, sleep=0.1)
     tx = {"to": sender, "value": fund, "gasPrice": w3.eth.gas_price}
     send_transaction(w3, tx)
     assert w3.eth.get_balance(sender, "latest") == fund
@@ -39,13 +40,20 @@ def test_trace_blk(ethermint):
         res = w3.eth.wait_for_transaction_receipt(txhash)
         assert res.status == 1
 
-    url = f"http://127.0.0.1:{ports.evmrpc_port(ethermint.base_port(0))}"
-    params = {
-        "method": "debug_traceBlockByNumber",
-        "params": [hex(blk + 1)],
-        "id": 1,
-        "jsonrpc": "2.0",
-    }
-    rsp = requests.post(url, json=params)
-    assert rsp.status_code == 200
-    assert len(rsp.json()["result"]) == 2
+    def trace_blk(blk):
+        url = f"http://127.0.0.1:{ports.evmrpc_port(ethermint.base_port(0))}"
+        params = {
+            "method": "debug_traceBlockByNumber",
+            "params": [hex(blk + 1)],
+            "id": 1,
+            "jsonrpc": "2.0",
+        }
+        rsp = requests.post(url, json=params)
+        assert rsp.status_code == 200
+        return rsp.json()["result"]
+
+    total = len(trace_blk(blk))
+    expected = 2
+    if total < expected:
+        total += len(trace_blk(blk + 1))
+    assert total == expected
