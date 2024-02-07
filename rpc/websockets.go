@@ -384,31 +384,29 @@ func (api *pubSubAPI) subscribe(wsConn *wsConn, subID rpc.ID, params []interface
 }
 
 func (api *pubSubAPI) subscribeNewHeads(wsConn *wsConn, subID rpc.ID) (pubsub.UnsubscribeFunc, error) {
-	sub, unsubFn, err := api.events.SubscribeNewHeads()
+	sub, unsubFn, err := api.events.SubscribeNewBlocks()
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating block filter")
 	}
 
-	// TODO: use events
-	baseFee := big.NewInt(params.InitialBaseFee)
-
 	go func() {
-		headersCh := sub.Event()
+		blocksCh := sub.Event()
 		errCh := sub.Err()
 		for {
 			select {
-			case event, ok := <-headersCh:
+			case event, ok := <-blocksCh:
 				if !ok {
 					return
 				}
 
-				data, ok := event.Data.(tmtypes.EventDataNewBlockHeader)
+				data, ok := event.Data.(tmtypes.EventDataNewBlock)
 				if !ok {
 					api.logger.Debug("event data type mismatch", "type", fmt.Sprintf("%T", event.Data))
 					continue
 				}
 
-				header := types.EthHeaderFromTendermint(data.Header, ethtypes.Bloom{}, baseFee)
+				baseFee := types.BaseFeeFromEvents(data.ResultFinalizeBlock.Events)
+				header := types.EthHeaderFromTendermint(data.Block.Header, ethtypes.Bloom{}, baseFee)
 
 				// write to ws conn
 				res := &SubscriptionNotification{
