@@ -11,7 +11,7 @@ import (
 )
 
 // Commit commits a block at a given time. Reminder: At the end of each
-// Tendermint Consensus round the following methods are run
+// CometBFT Consensus round the following methods are run
 //  1. FinalizeBlock
 //  2. Commit
 func Commit(ctx sdk.Context, app *app.EthermintApp, t time.Duration, vs *tmtypes.ValidatorSet) (sdk.Context, error) {

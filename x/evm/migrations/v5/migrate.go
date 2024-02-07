@@ -52,16 +52,34 @@ func MigrateStore(
 	params.EvmDenom = denom
 	params.ExtraEIPs = extraEIPs.EIPs
 	params.ChainConfig = chainConfig
-	params.EnableCreate, _ = store.Has(types.ParamStoreKeyEnableCreate)
-	params.EnableCall, _ = store.Has(types.ParamStoreKeyEnableCall)
-	params.AllowUnprotectedTxs, _ = store.Has(types.ParamStoreKeyAllowUnprotectedTxs)
+	if params.EnableCreate, err = store.Has(types.ParamStoreKeyEnableCreate); err != nil {
+		return err
+	}
+	if params.EnableCall, err = store.Has(types.ParamStoreKeyEnableCall); err != nil {
+		return err
+	}
+	if params.AllowUnprotectedTxs, err = store.Has(types.ParamStoreKeyAllowUnprotectedTxs); err != nil {
+		return err
+	}
 
-	_ = store.Delete(types.ParamStoreKeyChainConfig)
-	_ = store.Delete(types.ParamStoreKeyExtraEIPs)
-	_ = store.Delete(types.ParamStoreKeyEVMDenom)
-	_ = store.Delete(types.ParamStoreKeyEnableCreate)
-	_ = store.Delete(types.ParamStoreKeyEnableCall)
-	_ = store.Delete(types.ParamStoreKeyAllowUnprotectedTxs)
+	if err = store.Delete(types.ParamStoreKeyChainConfig); err != nil {
+		return err
+	}
+	if err = store.Delete(types.ParamStoreKeyExtraEIPs); err != nil {
+		return err
+	}
+	if err = store.Delete(types.ParamStoreKeyEVMDenom); err != nil {
+		return err
+	}
+	if err = store.Delete(types.ParamStoreKeyEnableCreate); err != nil {
+		return err
+	}
+	if err = store.Delete(types.ParamStoreKeyEnableCall); err != nil {
+		return err
+	}
+	if err = store.Delete(types.ParamStoreKeyAllowUnprotectedTxs); err != nil {
+		return err
+	}
 
 	if err := params.Validate(); err != nil {
 		return err
