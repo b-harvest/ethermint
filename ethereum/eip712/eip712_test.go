@@ -299,6 +299,28 @@ func (suite *EIP712TestSuite) TestEIP712() {
 			timeoutHeight: 1000,
 			expectSuccess: false,
 		},
+		{
+			title: "Succeeds - MsgMultiSend",
+			msgs: []sdk.Msg{
+				banktypes.NewMsgMultiSend(
+					banktypes.NewInput(
+						suite.createTestAddress(),
+						suite.makeCoins(suite.denom, math.NewInt(100)),
+					),
+					[]banktypes.Output{
+						banktypes.NewOutput(
+							suite.createTestAddress(),
+							suite.makeCoins(suite.denom, math.NewInt(50)),
+						),
+						banktypes.NewOutput(
+							suite.createTestAddress(),
+							suite.makeCoins(suite.denom, math.NewInt(50)),
+						),
+					},
+				),
+			},
+			expectSuccess: true,
+		},
 	}
 
 	for _, tc := range testCases {
