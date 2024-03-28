@@ -228,6 +228,9 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		}
 		chainID = conf.ChainID
 	}
+
+	opeEnabled := cast.ToBool(appOpts.Get(flags.FlagOPEEnabled))
+
 	ethermintApp := ethermintapp.NewEthermintApp(
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
@@ -245,6 +248,7 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(sdkserver.FlagIAVLCacheSize))),
 		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(sdkserver.FlagDisableIAVLFastNode))),
 		baseapp.SetChainID(chainID),
+		baseapp.SetOPEEnabled(opeEnabled),
 	)
 
 	return ethermintApp
