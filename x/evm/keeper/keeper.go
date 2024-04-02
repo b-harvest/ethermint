@@ -170,9 +170,9 @@ func (k Keeper) GetAuthority() sdk.AccAddress {
 
 // GetBlockBloomTransient returns bloom bytes for the current block height
 func (k Keeper) GetBlockBloomTransient(ctx sdk.Context) *big.Int {
-	store := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
+	prefixStore := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
 	heightBz := sdk.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
-	bz := store.Get(heightBz)
+	bz := prefixStore.Get(heightBz)
 	if len(bz) == 0 {
 		return big.NewInt(0)
 	}
@@ -183,9 +183,9 @@ func (k Keeper) GetBlockBloomTransient(ctx sdk.Context) *big.Int {
 // SetBlockBloomTransient sets the given bloom bytes to the transient store. This value is reset on
 // every block.
 func (k Keeper) SetBlockBloomTransient(ctx sdk.Context, bloom *big.Int) {
-	store := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
+	prefixStore := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
 	heightBz := sdk.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
-	store.Set(heightBz, bloom.Bytes())
+	prefixStore.Set(heightBz, bloom.Bytes())
 }
 
 // ----------------------------------------------------------------------------
@@ -194,14 +194,14 @@ func (k Keeper) SetBlockBloomTransient(ctx sdk.Context, bloom *big.Int) {
 
 // SetTxIndexTransient set the index of processing transaction
 func (k Keeper) SetTxIndexTransient(ctx sdk.Context, index uint64) {
-	store := ctx.TransientStore(k.transientKey)
-	store.Set(types.KeyPrefixTransientTxIndex, sdk.Uint64ToBigEndian(index))
+	prefixStore := ctx.TransientStore(k.transientKey)
+	prefixStore.Set(types.KeyPrefixTransientTxIndex, sdk.Uint64ToBigEndian(index))
 }
 
 // GetTxIndexTransient returns EVM transaction index on the current block.
 func (k Keeper) GetTxIndexTransient(ctx sdk.Context) uint64 {
-	store := ctx.TransientStore(k.transientKey)
-	bz := store.Get(types.KeyPrefixTransientTxIndex)
+	prefixStore := ctx.TransientStore(k.transientKey)
+	bz := prefixStore.Get(types.KeyPrefixTransientTxIndex)
 	if len(bz) == 0 {
 		return 0
 	}
@@ -215,8 +215,8 @@ func (k Keeper) GetTxIndexTransient(ctx sdk.Context) uint64 {
 
 // GetLogSizeTransient returns EVM log index on the current block.
 func (k Keeper) GetLogSizeTransient(ctx sdk.Context) uint64 {
-	store := ctx.TransientStore(k.transientKey)
-	bz := store.Get(types.KeyPrefixTransientLogSize)
+	tStore := ctx.TransientStore(k.transientKey)
+	bz := tStore.Get(types.KeyPrefixTransientLogSize)
 	if len(bz) == 0 {
 		return 0
 	}
@@ -227,8 +227,8 @@ func (k Keeper) GetLogSizeTransient(ctx sdk.Context) uint64 {
 // SetLogSizeTransient fetches the current EVM log index from the transient store, increases its
 // value by one and then sets the new index back to the transient store.
 func (k Keeper) SetLogSizeTransient(ctx sdk.Context, logSize uint64) {
-	store := ctx.TransientStore(k.transientKey)
-	store.Set(types.KeyPrefixTransientLogSize, sdk.Uint64ToBigEndian(logSize))
+	tStore := ctx.TransientStore(k.transientKey)
+	tStore.Set(types.KeyPrefixTransientLogSize, sdk.Uint64ToBigEndian(logSize))
 }
 
 // ----------------------------------------------------------------------------
@@ -275,9 +275,7 @@ func (k Keeper) Tracer(ctx sdk.Context, msg core.Message, ethCfg *params.ChainCo
 	return types.NewTracer(k.tracer, msg, ethCfg, ctx.BlockHeight())
 }
 
-// GetAccountWithoutBalance load nonce and codehash without balance,
-// more efficient in cases where balance is not needed.
-func (k *Keeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *statedb.Account {
+func (k *Keeper) GetAccount(ctx sdk.Context, addr common.Address) *statedb.Account {
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
@@ -305,7 +303,6 @@ func (k *Keeper) GetAccountOrEmpty(ctx sdk.Context, addr common.Address) statedb
 
 	// empty account
 	return statedb.Account{
-		Balance:  new(big.Int),
 		CodeHash: types.EmptyCodeHash,
 	}
 }
@@ -321,8 +318,8 @@ func (k *Keeper) GetNonce(ctx sdk.Context, addr common.Address) uint64 {
 	return acct.GetSequence()
 }
 
-// GetBalance load account's balance of gas token
-func (k *Keeper) GetBalance(ctx sdk.Context, addr common.Address) *big.Int {
+// GetEVMDenomBalance returns the balance of evm denom
+func (k *Keeper) GetEVMDenomBalance(ctx sdk.Context, addr common.Address) *big.Int {
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	evmParams := k.GetParams(ctx)
 	evmDenom := evmParams.GetEvmDenom()
@@ -330,8 +327,12 @@ func (k *Keeper) GetBalance(ctx sdk.Context, addr common.Address) *big.Int {
 	if evmDenom == "" {
 		return big.NewInt(-1)
 	}
-	coin := k.bankKeeper.GetBalance(ctx, cosmosAddr, evmDenom)
-	return coin.Amount.BigInt()
+	return k.GetBalance(ctx, cosmosAddr, evmDenom)
+}
+
+// GetBalance load account's balance of specified denom
+func (k *Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) *big.Int {
+	return k.bankKeeper.GetBalance(ctx, addr, denom).Amount.BigInt()
 }
 
 // GetBaseFee returns current base fee, return values:
@@ -366,14 +367,14 @@ func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) sdkmath.LegacyDec {
 
 // ResetTransientGasUsed reset gas used to prepare for execution of current cosmos tx, called in ante handler.
 func (k Keeper) ResetTransientGasUsed(ctx sdk.Context) {
-	store := ctx.TransientStore(k.transientKey)
-	store.Delete(types.KeyPrefixTransientGasUsed)
+	tstore := ctx.TransientStore(k.transientKey)
+	tstore.Delete(types.KeyPrefixTransientGasUsed)
 }
 
 // GetTransientGasUsed returns the gas used by current cosmos tx.
 func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
-	store := ctx.TransientStore(k.transientKey)
-	bz := store.Get(types.KeyPrefixTransientGasUsed)
+	tstore := ctx.TransientStore(k.transientKey)
+	bz := tstore.Get(types.KeyPrefixTransientGasUsed)
 	if len(bz) == 0 {
 		return 0
 	}
@@ -382,9 +383,9 @@ func (k Keeper) GetTransientGasUsed(ctx sdk.Context) uint64 {
 
 // SetTransientGasUsed sets the gas used by current cosmos tx.
 func (k Keeper) SetTransientGasUsed(ctx sdk.Context, gasUsed uint64) {
-	store := ctx.TransientStore(k.transientKey)
+	tstore := ctx.TransientStore(k.transientKey)
 	bz := sdk.Uint64ToBigEndian(gasUsed)
-	store.Set(types.KeyPrefixTransientGasUsed, bz)
+	tstore.Set(types.KeyPrefixTransientGasUsed, bz)
 }
 
 // AddTransientGasUsed accumulate gas used by each eth msgs included in current cosmos tx.

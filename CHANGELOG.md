@@ -46,12 +46,13 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Bug Fixes
 
-* (evm) [#447](https://github.com/crypto-org-chain/ethermint/pull/447) Deduct fee through virtual bank transfer.
 - (rpc) [#1688](https://github.com/evmos/ethermint/pull/1688) Align filter rule for `debug_traceBlockByNumber`
 
 ### Improvements
 
 - (ante) [#1717](https://github.com/evmos/ethermint/pull/1717) Reuse sender recovery result.
+- (evm) [#447](https://github.com/crypto-org-chain/ethermint/pull/447) Deduct fee through virtual bank transfer.
+- (evm) [#448](https://github.com/crypto-org-chain/ethermint/pull/448) Refactor the evm transfer to be more efficient.
 
 ## [v0.21.0] - 2023-01-26
 

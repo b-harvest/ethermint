@@ -205,8 +205,7 @@ func (suite *KeeperTestSuite) TestCheckSenderBalance() {
 
 	vmdb := suite.StateDB()
 	vmdb.AddBalance(suite.address, hundredInt.BigInt())
-	balance := vmdb.GetBalance(suite.address)
-	suite.Require().Equal(balance, hundredInt.BigInt())
+	suite.Require().Equal(vmdb.GetBalance(suite.address), hundredInt.BigInt())
 	err := vmdb.Commit()
 	suite.Require().NoError(err, "Unexpected error while committing to vmdb: %d", err)
 
@@ -237,9 +236,9 @@ func (suite *KeeperTestSuite) TestCheckSenderBalance() {
 
 			txData, _ := evmtypes.UnpackTxData(tx.Data)
 
-			acct := suite.app.EvmKeeper.GetAccountOrEmpty(suite.ctx, suite.address)
+			balance := suite.app.EvmKeeper.GetEVMDenomBalance(suite.ctx, suite.address)
 			err := keeper.CheckSenderBalance(
-				sdkmath.NewIntFromBigInt(acct.Balance),
+				sdkmath.NewIntFromBigInt(balance),
 				txData,
 			)
 
