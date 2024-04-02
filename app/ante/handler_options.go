@@ -45,8 +45,9 @@ type HandlerOptions struct {
 	SigGasConsumer         func(meter storetypes.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
 	MaxTxGasWanted         uint64
 	ExtensionOptionChecker ante.ExtensionOptionChecker
-	TxFeeChecker           ante.TxFeeChecker
-	DisabledAuthzMsgs      []string
+	// use dynamic fee checker or the cosmos-sdk default one for native transactions
+	DynamicFeeChecker bool
+	DisabledAuthzMsgs []string
 }
 
 func (options HandlerOptions) validate() error {
@@ -85,6 +86,10 @@ func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 }
 
 func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
+	var txFeeChecker ante.TxFeeChecker
+	if options.DynamicFeeChecker {
+		txFeeChecker = NewDynamicFeeChecker(options.EvmKeeper)
+	}
 	return sdk.ChainAnteDecorators(
 		RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		// disable the Msg types that cannot be included on an authz.MsgExec msgs field
@@ -96,7 +101,7 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeeChecker),
+		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, txFeeChecker),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),

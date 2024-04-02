@@ -18,23 +18,65 @@ package encoding
 import (
 	"cosmossdk.io/simapp/params"
 	"cosmossdk.io/x/tx/signing"
-	amino "github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/cosmos/gogoproto/proto"
 	protov2 "google.golang.org/protobuf/proto"
 
 	evmv1 "github.com/evmos/ethermint/api/ethermint/evm/v1"
 	enccodec "github.com/evmos/ethermint/encoding/codec"
+	ethermint "github.com/evmos/ethermint/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
+// MakeConfig creates an EncodingConfig
+func MakeConfig() ethermint.EncodingConfig {
+	amn := codec.NewLegacyAmino()
+	signingOptions := signing.Options{
+		AddressCodec: address.Bech32Codec{
+			Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+		},
+		ValidatorAddressCodec: address.Bech32Codec{
+			Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+		},
+	}
+	// evm/MsgEthereumTx
+	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgEthereumTx{}), evmtypes.GetSignersFromMsgEthereumTxV2)
+	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+		ProtoFiles:     proto.HybridResolver,
+		SigningOptions: signingOptions,
+	})
+	if err != nil {
+		panic(err)
+	}
+	// TODO(zsystm): We already defined custom GetSigners for MsgEthereumTx, should we remove this?
+	if err := interfaceRegistry.SigningContext().Validate(); err != nil {
+		panic(err)
+	}
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+	encodingConfig := ethermint.EncodingConfig{
+		InterfaceRegistry: interfaceRegistry,
+		Codec:             cdc,
+		TxConfig:          authtx.NewTxConfig(cdc, authtx.DefaultSignModes),
+		Amino:             amn,
+	}
+	enccodec.RegisterLegacyAminoCodec(amn)
+	enccodec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	// TODO(zsystm): Makre sure we need this line
+	// This is needed for the EIP712 txs because currently is using
+	// the deprecated method legacytx.StdSignBytes
+	legacytx.RegressionTestingAminoCodec = amn
+	return encodingConfig
+}
+
 // MakeTestEncodingConfig creates an EncodingConfig for testing
 func MakeTestEncodingConfig(modules ...module.AppModuleBasic) params.EncodingConfig {
-	cdc := amino.NewLegacyAmino()
+	cdc := codec.NewLegacyAmino()
 
 	signingOptions := signing.Options{
 		AddressCodec:          address.Bech32Codec{Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix()},
@@ -48,12 +90,12 @@ func MakeTestEncodingConfig(modules ...module.AppModuleBasic) params.EncodingCon
 		ProtoFiles:     proto.HybridResolver,
 		SigningOptions: signingOptions,
 	})
-	codec := amino.NewProtoCodec(interfaceRegistry)
+	codec := codec.NewProtoCodec(interfaceRegistry)
 
 	encodingConfig := params.EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
 		Codec:             codec,
-		TxConfig:          tx.NewTxConfig(codec, tx.DefaultSignModes),
+		TxConfig:          authtx.NewTxConfig(codec, authtx.DefaultSignModes),
 		Amino:             cdc,
 	}
 

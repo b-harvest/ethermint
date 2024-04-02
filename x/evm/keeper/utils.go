@@ -27,6 +27,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/evmos/ethermint/x/evm/types"
 )
@@ -37,18 +38,21 @@ func (k Keeper) GetCoinbaseAddress(ctx sdk.Context, proposerAddress sdk.ConsAddr
 	if err != nil {
 		return common.Address{}, errorsmod.Wrapf(
 			err,
-			"failed to retrieve validator from block proposer address %s",
-			proposerAddress.String(),
+			"failed to retrieve validator from block proposer address %s, %s",
+			proposerAddress.String(), err.Error(),
 		)
 	}
 
 	valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
 	if err != nil {
-		return common.Address{}, err
+		return common.Address{}, errorsmod.Wrapf(
+			err,
+			"failed to convert validator operator address %s to bytes",
+			validator.GetOperator(),
+		)
 	}
 
-	coinbase := common.BytesToAddress(valAddr.Bytes())
-	return coinbase, nil
+	return common.BytesToAddress(valAddr.Bytes()), nil
 }
 
 // GetProposerAddress returns current block proposer's address when provided proposer address is empty.
@@ -73,7 +77,7 @@ func (k *Keeper) DeductTxCostsFromUserBalance(
 	}
 
 	// deduct the full gas cost from the user balance
-	if err := authante.DeductFees(k.bankKeeper, ctx, signerAcc, fees); err != nil {
+	if err := DeductFees(k.bankKeeper, ctx, signerAcc, fees); err != nil {
 		return errorsmod.Wrapf(err, "failed to deduct full gas cost %s from the user %s balance", fees, from)
 	}
 
@@ -152,5 +156,19 @@ func CheckSenderBalance(
 			"sender balance < tx cost (%s < %s)", balance, txData.Cost(),
 		)
 	}
+	return nil
+}
+
+// DeductFees deducts fees from the given account.
+func DeductFees(bankKeeper types.BankKeeper, ctx sdk.Context, acc sdk.AccountI, fees sdk.Coins) error {
+	if !fees.IsValid() {
+		return errorsmod.Wrapf(errortypes.ErrInsufficientFee, "invalid fee amount: %s", fees)
+	}
+
+	err := bankKeeper.SendCoinsFromAccountToModuleVirtual(ctx, acc.GetAddress(), authtypes.FeeCollectorName, fees)
+	if err != nil {
+		return errorsmod.Wrapf(errortypes.ErrInsufficientFunds, err.Error())
+	}
+
 	return nil
 }

@@ -23,7 +23,6 @@ import (
 	tmcfg "github.com/cometbft/cometbft/config"
 
 	"cosmossdk.io/log"
-	"cosmossdk.io/simapp/params"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -50,7 +49,7 @@ const EnvPrefix = "ETHERMINT"
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
-func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
+func NewRootCmd() (*cobra.Command, ethermint.EncodingConfig) {
 	tempApp := app.NewEthermintApp(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
@@ -61,12 +60,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		0,
 		simtestutil.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
 	)
-	encodingConfig := params.EncodingConfig{
-		InterfaceRegistry: tempApp.InterfaceRegistry(),
-		Codec:             tempApp.AppCodec(),
-		TxConfig:          tempApp.TxConfig(),
-		Amino:             tempApp.LegacyAmino(),
-	}
+	encodingConfig := tempApp.EncodingConfig()
+
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Codec).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).

@@ -60,8 +60,7 @@ message LegacyTx {
   // to is the hex formatted address of the recipient
   string to = 4;
   // value defines the unsigned integer value of the transaction amount.
-  string value = 5
-      [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.customname) = "Amount"];
+  string value = 5 [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.customname) = "Amount"];
   // data is the data payload bytes of the transaction.
   bytes data = 6;
   // v defines the signature value
@@ -92,8 +91,7 @@ message AccessListTx {
   // to is the recipient address in hex format
   string to = 5;
   // value defines the unsigned integer value of the transaction amount.
-  string value = 6
-      [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.customname) = "Amount"];
+  string value = 6 [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.customname) = "Amount"];
   // data is the data payload bytes of the transaction.
   bytes data = 7;
   // accesses is an array of access tuples
@@ -129,8 +127,7 @@ message DynamicFeeTx {
   // to is the hex formatted address of the recipient
   string to = 6;
   // value defines the the transaction amount.
-  string value = 7
-      [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.customname) = "Amount"];
+  string value = 7 [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.customname) = "Amount"];
   // data is the data payload bytes of the transaction.
   bytes data = 8;
   // accesses is an array of access tuples

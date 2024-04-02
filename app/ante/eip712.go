@@ -52,6 +52,18 @@ func init() {
 // Deprecated: NewLegacyCosmosAnteHandlerEip712 creates an AnteHandler to process legacy EIP-712
 // transactions, as defined by the presence of an ExtensionOptionsWeb3Tx extension.
 func NewLegacyCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
+	// TODO(zsystm): un-comment when we do performance tuning, it will increase the performance (multiple param fetch --> one). got an idea from Cronos.
+	// TODO(zsystm): those following codes should be used for newCosmosAntehandler and newEthAnteHandler too
+	// evmParams := options.EvmKeeper.GetParams(ctx)
+	//	feemarketParams := options.FeeMarketKeeper.GetParams(ctx)
+	//	evmDenom := evmParams.EvmDenom
+	//	chainID := options.EvmKeeper.ChainID()
+	//	chainCfg := evmParams.GetChainConfig()
+	//	ethCfg := chainCfg.EthereumConfig(chainID)
+	var txFeeChecker authante.TxFeeChecker
+	if options.DynamicFeeChecker {
+		txFeeChecker = NewDynamicFeeChecker(options.EvmKeeper)
+	}
 	return sdk.ChainAnteDecorators(
 		RejectMessagesDecorator{}, // reject MsgEthereumTxs
 		// disable the Msg types that cannot be included on an authz.MsgExec msgs field
@@ -62,7 +74,7 @@ func NewLegacyCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 		NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
 		authante.NewValidateMemoDecorator(options.AccountKeeper),
 		authante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		authante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeeChecker),
+		authante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, txFeeChecker),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		authante.NewSetPubKeyDecorator(options.AccountKeeper),
 		authante.NewValidateSigCountDecorator(options.AccountKeeper),
