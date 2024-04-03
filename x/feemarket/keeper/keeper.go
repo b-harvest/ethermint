@@ -20,7 +20,6 @@ import (
 
 	corestoretypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -37,7 +36,6 @@ type Keeper struct {
 	cdc codec.BinaryCodec
 	// Store key required for the Fee Market Prefix KVStore.
 	storeService corestoretypes.KVStoreService
-	transientKey storetypes.StoreKey
 	// the address capable of executing a MsgUpdateParams message. Typically, this should be the x/gov module account.
 	authority sdk.AccAddress
 	// Legacy subspace
@@ -49,7 +47,6 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	authority sdk.AccAddress,
 	storeService corestoretypes.KVStoreService,
-	transientKey storetypes.StoreKey,
 	ss paramstypes.Subspace,
 ) Keeper {
 	// ensure authority account is correctly formatted
@@ -61,7 +58,6 @@ func NewKeeper(
 		cdc:          cdc,
 		storeService: storeService,
 		authority:    authority,
-		transientKey: transientKey,
 		ss:           ss,
 	}
 }
@@ -98,30 +94,6 @@ func (k Keeper) GetBlockGasWanted(ctx sdk.Context) (uint64, error) {
 	}
 
 	return sdk.BigEndianToUint64(bz), nil
-}
-
-// GetTransientGasWanted returns the gas wanted in the current block from transient store.
-func (k Keeper) GetTransientGasWanted(ctx sdk.Context) uint64 {
-	store := ctx.TransientStore(k.transientKey)
-	bz := store.Get(types.KeyPrefixTransientBlockGasWanted)
-	if len(bz) == 0 {
-		return 0
-	}
-	return sdk.BigEndianToUint64(bz)
-}
-
-// SetTransientBlockGasWanted sets the block gas wanted to the transient store.
-func (k Keeper) SetTransientBlockGasWanted(ctx sdk.Context, gasWanted uint64) {
-	store := ctx.TransientStore(k.transientKey)
-	gasBz := sdk.Uint64ToBigEndian(gasWanted)
-	store.Set(types.KeyPrefixTransientBlockGasWanted, gasBz)
-}
-
-// AddTransientGasWanted adds the cumulative gas wanted in the transient store
-func (k Keeper) AddTransientGasWanted(ctx sdk.Context, gasWanted uint64) (uint64, error) {
-	result := k.GetTransientGasWanted(ctx) + gasWanted
-	k.SetTransientBlockGasWanted(ctx, result)
-	return result, nil
 }
 
 // GetBaseFeeV1 get the base fee from v1 version of states.

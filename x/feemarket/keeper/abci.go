@@ -24,6 +24,7 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ethermint "github.com/evmos/ethermint/types"
 )
 
 // BeginBlock updates base fee
@@ -60,22 +61,25 @@ func (k *Keeper) BeginBlocker(ctx context.Context) error {
 func (k *Keeper) EndBlocker(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	if sdkCtx.BlockGasMeter() == nil {
-		k.Logger(sdkCtx).Error("block gas meter is nil when setting block gas wanted")
-		return nil
+	gasWanted := sdkCtx.BlockGasWanted()
+	gw, err := ethermint.SafeInt64(gasWanted)
+	if err != nil {
+		return err
 	}
-
-	gasWanted := k.GetTransientGasWanted(sdkCtx)
-	gasUsed := sdkCtx.BlockGasMeter().GasConsumedToLimit()
+	gasUsed, err := ethermint.SafeInt64(sdkCtx.BlockGasUsed())
+	if err != nil {
+		return err
+	}
+	// gasUsed := sdkCtx.BlockGasMeter().GasConsumedToLimit()
 
 	// to prevent BaseFee manipulation we limit the gasWanted so that
 	// gasWanted = max(gasWanted * MinGasMultiplier, gasUsed)
 	// this will be keep BaseFee protected from un-penalized manipulation
 	// more info here https://github.com/evmos/ethermint/pull/1105#discussion_r888798925
 	minGasMultiplier := k.GetParams(sdkCtx).MinGasMultiplier
-	limitedGasWanted := math.LegacyNewDec(int64(gasWanted)).Mul(minGasMultiplier)                             //#nosec G115
+	limitedGasWanted := math.LegacyNewDec(gw).Mul(minGasMultiplier)                                           //#nosec G115
 	gasWanted = math.LegacyMaxDec(limitedGasWanted, math.LegacyNewDec(int64(gasUsed))).TruncateInt().Uint64() //#nosec G115
-	err := k.SetBlockGasWanted(sdkCtx, gasWanted)
+	err = k.SetBlockGasWanted(sdkCtx, gasWanted)
 	if err != nil {
 		return err
 	}

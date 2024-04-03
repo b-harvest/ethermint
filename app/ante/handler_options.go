@@ -79,8 +79,7 @@ func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		NewCanTransferDecorator(options.EvmKeeper),
 		NewEthGasConsumeDecorator(options.EvmKeeper, options.MaxTxGasWanted),
 		NewEthIncrementSenderSequenceDecorator(options.AccountKeeper), // innermost AnteDecorator.
-		NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
-		NewEthEmitEventDecorator(options.EvmKeeper), // emit eth tx hash and index at the very last ante handler.
+		NewEthEmitEventDecorator(options.EvmKeeper),                   // emit eth tx hash and index at the very last ante handler.
 	)
 }
 
@@ -104,6 +103,5 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
-		NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
 	)
 }
