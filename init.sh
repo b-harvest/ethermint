@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KEY="mykey"
+KEY="key1"
 CHAINID="ethermint_9000-1"
 MONIKER="localtestnet"
 KEYRING="test"
@@ -23,6 +23,10 @@ ethermintd config set client keyring-backend $KEYRING
 
 # if $KEY exists it should be deleted
 ethermintd keys add $KEY --keyring-backend $KEYRING --algo $KEYALGO
+ethermintd keys add key2 --keyring-backend $KEYRING --algo $KEYALGO
+ethermintd keys add key3 --keyring-backend $KEYRING --algo $KEYALGO
+ethermintd keys add key4 --keyring-backend $KEYRING --algo $KEYALGO
+
 
 # Set moniker and chain-id for Ethermint (Moniker can be anything, chain-id must be an integer)
 ethermintd init $MONIKER --chain-id $CHAINID
@@ -38,6 +42,9 @@ cat $HOME/.ethermintd/config/genesis.json | jq '.consensus["params"]["block"]["m
 
 # Allocate genesis accounts (cosmos formatted addresses)
 ethermintd add-genesis-account $KEY 100000000000000000000000000aphoton --keyring-backend $KEYRING
+ethermintd add-genesis-account key2 100000000000000000000000000aphoton --keyring-backend $KEYRING
+ethermintd add-genesis-account key3 100000000000000000000000000aphoton --keyring-backend $KEYRING
+ethermintd add-genesis-account key4 100000000000000000000000000aphoton --keyring-backend $KEYRING
 
 # Sign genesis transaction
 ethermintd gentx $KEY 1000000000000000000000aphoton --keyring-backend $KEYRING --chain-id $CHAINID

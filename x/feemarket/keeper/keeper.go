@@ -104,6 +104,7 @@ func (k Keeper) GetBlockGasWanted(ctx sdk.Context) (uint64, error) {
 func (k Keeper) GetTransientGasWanted(ctx sdk.Context) uint64 {
 	store := ctx.TransientStore(k.transientKey)
 	bz := store.Get(types.KeyPrefixTransientBlockGasWanted)
+	k.Logger(ctx).Debug("GetTransientGasWanted called", "bz", bz)
 	if len(bz) == 0 {
 		return 0
 	}

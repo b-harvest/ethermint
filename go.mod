@@ -21,7 +21,7 @@ require (
 	cosmossdk.io/x/upgrade v0.1.0
 	github.com/btcsuite/btcd v0.23.4
 	github.com/btcsuite/btcd/btcutil v1.1.3
-	github.com/cometbft/cometbft v0.38.5
+	github.com/cometbft/cometbft v0.38.6
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.4
 	github.com/cosmos/cosmos-sdk v0.50.5
@@ -54,6 +54,7 @@ require (
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/yihuang/go-block-stm v0.0.0-20240321085908-ff6b9b121972
 	golang.org/x/net v0.21.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/text v0.14.0
@@ -247,10 +248,17 @@ require (
 
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
+	cosmossdk.io/store => /Users/fates/Dev/cosmos-sdk/store
+	//cosmossdk.io/store => github.com/yihuang/cosmos-sdk/store v0.0.0-20240320132504-f03dd564f9ca
+
 	// use cosmos keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
+	github.com/cosmos/cosmos-sdk => /Users/fates/Dev/cosmos-sdk
+	//github.com/cosmos/cosmos-sdk => github.com/yihuang/cosmos-sdk v0.43.0-beta1.0.20240321030040-b79fe3bf4788
+
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	github.com/tidwall/btree => github.com/yihuang/btree v0.0.0-20240318010431-d365682df9a7
 )

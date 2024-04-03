@@ -46,6 +46,13 @@ const (
 	// DefaultEVMTracer is the default vm.Tracer type
 	DefaultEVMTracer = ""
 
+	// DefaultEVMBlockExecutor is the default evm.BlockExecutor type
+	DefaultEVMBlockExecutor = "default"
+
+	// DefaultEVMBlockSTMWorkers is the default number of workers for block-stm
+	// 0 means using the number of CPUs
+	DefaultEVMBlockSTMWorkers = 0
+
 	// DefaultFixRevertGasRefundHeight is the default height at which to overwrite gas refund
 	DefaultFixRevertGasRefundHeight = 0
 
@@ -96,6 +103,9 @@ type EVMConfig struct {
 	Tracer string `mapstructure:"tracer"`
 	// MaxTxGasWanted defines the gas wanted for each eth tx returned in ante handler in check tx mode.
 	MaxTxGasWanted uint64 `mapstructure:"max-tx-gas-wanted"`
+
+	BlockExecutor   string `mapstructure:"block-executor"`
+	BlockSTMWorkers uint64 `mapstructure:"block-stm-workers"`
 }
 
 // JSONRPCConfig defines configuration for the EVM RPC server.

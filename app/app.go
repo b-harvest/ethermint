@@ -345,6 +345,17 @@ func NewEthermintApp(
 		memKeys:           memKeys,
 	}
 
+	executor := cast.ToString(appOpts.Get(srvflags.EVMBlockExecutor))
+	executor = "block-stm"
+	if executor == "block-stm" {
+		sdk.SetAddrCacheEnabled(false)
+		workers := cast.ToInt(appOpts.Get(srvflags.EVMBlockSTMWorkers))
+		workers = 0
+		app.SetTxExecutor(STMTxExecutor(app.GetStoreKeys(), workers))
+	} else {
+		app.SetTxExecutor(DefaultTxExecutor)
+	} // add the capability keeper
+
 	// init params keeper and subspaces
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
@@ -993,11 +1004,16 @@ func (app *EthermintApp) GetKey(storeKey string) *storetypes.KVStoreKey {
 
 // GetStoreKeys returns all the stored store keys.
 func (app *EthermintApp) GetStoreKeys() []storetypes.StoreKey {
-	keys := make([]storetypes.StoreKey, len(app.keys))
+	keys := make([]storetypes.StoreKey, 0, len(app.keys))
 	for _, key := range app.keys {
 		keys = append(keys, key)
 	}
-
+	for _, key := range app.tkeys {
+		keys = append(keys, key)
+	}
+	for _, key := range app.memKeys {
+		keys = append(keys, key)
+	}
 	return keys
 }
 
