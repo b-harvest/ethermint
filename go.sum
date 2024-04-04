@@ -267,6 +267,10 @@ github.com/aws/aws-sdk-go v1.44.122/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX
 github.com/aws/aws-sdk-go v1.44.224 h1:09CiaaF35nRmxrzWZ2uRq5v6Ghg/d2RiPjZnSgtt+RQ=
 github.com/aws/aws-sdk-go v1.44.224/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
+github.com/b-harvest/cosmos-sdk v0.0.0-20240403064337-5fb99998e49a h1:YyJAa2eM989hab2CgMoUByeBCN1AsnlnpY3qlCqC4DQ=
+github.com/b-harvest/cosmos-sdk v0.0.0-20240403064337-5fb99998e49a/go.mod h1:oV/k6GJgXV9QPoM2fsYDPPsyPBgQbdotv532O6Mz1OQ=
+github.com/b-harvest/cosmos-sdk/store v0.0.0-20240403064337-5fb99998e49a h1:YkAA3q1r3SqlysS2/IH0KG/SRUy5ijdIIRY2R16FFaA=
+github.com/b-harvest/cosmos-sdk/store v0.0.0-20240403064337-5fb99998e49a/go.mod h1:lfuLI1f4o+0SGtlHQS4x5qsjRcZZfYqG8bp3k8hM0M8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
