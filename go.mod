@@ -248,13 +248,14 @@ require (
 
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
-	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20240403064337-5fb99998e49a
+	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20240415041328-871ecb098c6f
 
 	// use cosmos keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.0.0-20240415035715-66d776c77df0
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
-	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20240403064337-5fb99998e49a
+	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20240415041328-871ecb098c6f
 
 	//github.com/cosmos/cosmos-sdk => github.com/yihuang/cosmos-sdk v0.43.0-beta1.0.20240321030040-b79fe3bf4788
 

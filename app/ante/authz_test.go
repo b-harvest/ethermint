@@ -326,7 +326,7 @@ func (suite *AnteTestSuite) TestRejectDeliverMsgsInAuthz() {
 			bz, err := txEncoder(tx)
 			suite.Require().NoError(err)
 
-			resCheckTx, _ := suite.app.CheckTx(
+			resCheckTx, _ := suite.app.CheckTxSync(
 				&abci.RequestCheckTx{
 					Tx:   bz,
 					Type: abci.CheckTxType_New,
