@@ -28,10 +28,8 @@ import (
 	protov2 "google.golang.org/protobuf/proto"
 
 	evmv1 "github.com/evmos/ethermint/api/ethermint/evm/v1"
-	feemarketv1 "github.com/evmos/ethermint/api/ethermint/feemarket/v1"
 	enccodec "github.com/evmos/ethermint/encoding/codec"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 )
 
 // MakeTestEncodingConfig creates an EncodingConfig for testing
@@ -43,10 +41,8 @@ func MakeTestEncodingConfig(modules ...module.AppModuleBasic) params.EncodingCon
 		ValidatorAddressCodec: address.Bech32Codec{Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix()},
 	}
 
-	// evm/MsgEthereumTx, evm/MsgUpdateParams, feemarket/MsgUpdateParams
+	// evm/MsgEthereumTx
 	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgEthereumTx{}), evmtypes.GetSignersFromMsgEthereumTxV2)
-	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgUpdateParams{}), evmtypes.GetSignersFromMsgUpdateParamsV2)
-	signingOptions.DefineCustomGetSigners(protov2.MessageName(&feemarketv1.MsgUpdateParams{}), feemarkettypes.GetSignersFromMsgUpdateParamsV2)
 
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles:     proto.HybridResolver,

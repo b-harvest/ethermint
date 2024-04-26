@@ -53,12 +53,6 @@ var (
 	_ codectypes.UnpackInterfacesMessage = MsgEthereumTx{}
 )
 
-// message type and route constants
-const (
-	// TypeMsgEthereumTx defines the type string of an Ethereum transaction
-	TypeMsgEthereumTx = "ethereum_tx"
-)
-
 // NewTx returns a reference to a new Ethereum transaction message.
 func NewTx(
 	chainID *big.Int, nonce uint64, to *common.Address, amount *big.Int,
@@ -175,12 +169,6 @@ func (msg *MsgEthereumTx) FromEthereumTx(tx *ethtypes.Transaction) error {
 	msg.Hash = tx.Hash().Hex()
 	return nil
 }
-
-// Route returns the route value of an MsgEthereumTx.
-func (msg MsgEthereumTx) Route() string { return RouterKey }
-
-// Type returns the type value of an MsgEthereumTx.
-func (msg MsgEthereumTx) Type() string { return TypeMsgEthereumTx }
 
 // ValidateBasic implements the sdk.Msg interface. It performs basic validation
 // checks of a Transaction. If returns an error if validation fails.
@@ -448,27 +436,6 @@ func (msg *MsgEthereumTx) BuildTx(b client.TxBuilder, evmDenom string) (authsign
 	return tx, nil
 }
 
-// GetSigners returns the expected signers for a MsgUpdateParams message.
-func (m MsgUpdateParams) GetSigners() []sdk.AccAddress {
-	//#nosec G703 -- gosec raises a warning about a non-handled error which we deliberately ignore here
-	addr, _ := sdk.AccAddressFromBech32(m.Authority)
-	return []sdk.AccAddress{addr}
-}
-
-// ValidateBasic does a sanity check of the provided data
-func (m *MsgUpdateParams) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(m.Authority); err != nil {
-		return errorsmod.Wrap(err, "invalid authority address")
-	}
-
-	return m.Params.Validate()
-}
-
-// GetSignBytes implements the LegacyMsg interface.
-func (m MsgUpdateParams) GetSignBytes() []byte {
-	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(&m))
-}
-
 func GetSignersFromMsgEthereumTxV2(msg protov2.Message) ([][]byte, error) {
 	msgv1, err := GetMsgEthereumTxFromMsgV2(msg)
 	if err != nil {
@@ -516,32 +483,5 @@ func GetMsgEthereumTxFromMsgV2(msg protov2.Message) (MsgEthereumTx, error) {
 	}
 	msgv1 := MsgEthereumTx{Data: dataAny}
 	msgv1.Hash = msgv1.AsTransaction().Hash().Hex()
-	return msgv1, nil
-}
-
-func GetSignersFromMsgUpdateParamsV2(msg protov2.Message) ([][]byte, error) {
-	msgv1, err := GetMsgUpdateParamsFromMsgV2(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	signers := [][]byte{}
-	for _, signer := range msgv1.GetSigners() {
-		signers = append(signers, signer.Bytes())
-	}
-
-	return signers, nil
-}
-
-func GetMsgUpdateParamsFromMsgV2(msg protov2.Message) (MsgUpdateParams, error) {
-	msgv2, ok := msg.(*evmapi.MsgUpdateParams)
-	if !ok {
-		return MsgUpdateParams{}, fmt.Errorf("invalid x/evm/MsgUpdateParams msg v2: %v", msg)
-	}
-
-	msgv1 := MsgUpdateParams{
-		Authority: msgv2.Authority,
-	}
-
 	return msgv1, nil
 }

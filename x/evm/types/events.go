@@ -17,7 +17,7 @@ package types
 
 // Evm module events
 const (
-	EventTypeEthereumTx = TypeMsgEthereumTx
+	EventTypeEthereumTx = "ethereum_tx"
 	EventTypeBlockBloom = "block_bloom"
 	EventTypeTxLog      = "tx_log"
 
