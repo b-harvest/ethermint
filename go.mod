@@ -249,6 +249,9 @@ replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
 	// use cosmos keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.0.0-20240504091841-470abcc3522b
+
+	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20240504095710-33da07425980
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
