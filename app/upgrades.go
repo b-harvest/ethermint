@@ -94,15 +94,19 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 		func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 			sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+			if fromVM, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM); err != nil {
+				return fromVM, err
+			}
+
 			// ibc v7
 			// OPTIONAL: prune expired tendermint consensus states to save storage space
 			if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, clientKeeper); err != nil {
-				return nil, err
+				return fromVM, err
 			}
 
 			legacyBaseAppSubspace := paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
 			if err := baseapp.MigrateParams(sdkCtx, legacyBaseAppSubspace, &consensusParamsKeeper.ParamsStore); err != nil {
-				return nil, err
+				return fromVM, err
 			}
 
 			// ibc v7.1
@@ -115,10 +119,10 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 			// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
 			err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, consensusParamsKeeper.ParamsStore)
 			if err != nil {
-				return nil, err
+				return fromVM, err
 			}
 
-			return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
+			return fromVM, err
 		},
 	)
 
