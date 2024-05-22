@@ -43,6 +43,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 - (app) [#1739](https://github.com/evmos/ethermint/pull/1739) Remove distribution module perms
 - (ante) [#1741](https://github.com/evmos/ethermint/pull/1741) Add authz ante handler
 - (eip712) [#1746](https://github.com/evmos/ethermint/pull/1746) Add EIP712 support for multiple messages and schemas
+- (deps) [canto#2](https://github.com/Canto-Network/ethermint/pull/2) Bump Comsos-SDK to v0.50.6, CometBFT to v0.38.6, ibc-go to v8.2.1
 
 ### Bug Fixes
 
@@ -51,6 +52,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Improvements
 
 - (ante) [#1717](https://github.com/evmos/ethermint/pull/1717) Reuse sender recovery result.
+- (evm,feemarket) [canto#2](https://github.com/Canto-Network/ethermint/pull/2) Apply Cosmos-SDK improvements.
+  - Remove `Type()` and `Route()` methods from all msgs
+  - Remove `GetSigner()` methods from all msgs, move their logic to protobuf and define a custom GetSigner func if needed.
+  - `authority` has been added to the required module to execute proposal msgs.
+
+### Client Breaking
+
+- (evm,feemarket) [canto#2](https://github.com/Canto-Network/ethermint/pull/2) update params is moved to msg level to support msgs-based gov proposals.
 
 ## [v0.21.0] - 2023-01-26
 
