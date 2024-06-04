@@ -298,9 +298,9 @@ func NewEthermintApp(
 	// NOTE we use custom transaction decoder that supports the sdk.Tx interface instead of sdk.StdTx
 	// Setup Mempool and Proposal Handlers
 	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
-		mempool := mempool.NoOpMempool{}
-		app.SetMempool(mempool)
-		handler := baseapp.NewDefaultProposalHandler(mempool, app)
+		mpool := mempool.NoOpMempool{}
+		app.SetMempool(mpool)
+		handler := baseapp.NewDefaultProposalHandler(mpool, app)
 		app.SetPrepareProposal(handler.PrepareProposalHandler())
 		app.SetProcessProposal(handler.ProcessProposalHandler())
 	})
