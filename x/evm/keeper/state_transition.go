@@ -3,6 +3,8 @@ package keeper
 import (
 	"math"
 	"math/big"
+	"sort"
+	"bytes"
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -93,7 +95,25 @@ func (k *Keeper) NewEVM(
 		tracer = k.Tracer(ctx, msg, cfg.ChainConfig)
 	}
 	vmConfig := k.VMConfig(ctx, msg, cfg, tracer)
-	return vm.NewEVM(blockCtx, txCtx, stateDB, cfg.ChainConfig, vmConfig)
+	rules := cfg.ChainConfig.Rules(big.NewInt(ctx.BlockHeight()), cfg.ChainConfig.MergeNetsplitBlock != nil)
+	contracts := make(map[common.Address]vm.PrecompiledContract)
+	active := make([]common.Address, 0)
+	for addr, c := range vm.DefaultPrecompiles(rules) {
+		contracts[addr] = c
+		active = append(active, addr)
+	}
+	for _, fn := range k.customContractFns {
+		c := fn(rules)
+		addr := c.Address()
+		contracts[addr] = c
+		active = append(active, addr)
+	}
+	sort.SliceStable(active, func(i, j int) bool {
+		return bytes.Compare(active[i].Bytes(), active[j].Bytes()) < 0
+	})
+	evm := vm.NewEVM(blockCtx, txCtx, stateDB, cfg.ChainConfig, vmConfig)
+	evm.WithPrecompiles(contracts, active)
+	return evm
 }
 
 // VMConfig creates an EVM configuration from the debug setting and the extra EIPs enabled on the
