@@ -82,9 +82,7 @@ func newSignedEthTx(
 
 func newEthMsgTx(
 	nonce uint64,
-	blockHeight int64,
 	address common.Address,
-	cfg *params.ChainConfig,
 	krSigner keyring.Signer,
 	ethSigner ethtypes.Signer,
 	txType byte,
@@ -147,7 +145,7 @@ func newNativeMessage(
 ) (core.Message, error) {
 	msgSigner := ethtypes.MakeSigner(cfg, big.NewInt(blockHeight))
 
-	msg, baseFee, err := newEthMsgTx(nonce, blockHeight, address, cfg, krSigner, ethSigner, txType, data, accessList)
+	msg, baseFee, err := newEthMsgTx(nonce, address, krSigner, ethSigner, txType, data, accessList)
 	if err != nil {
 		return nil, err
 	}
