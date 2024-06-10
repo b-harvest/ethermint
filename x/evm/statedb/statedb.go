@@ -60,13 +60,12 @@ type StateDB struct {
 	origCtx sdk.Context
 	// ctx is a branched context on top of the caller context
 	ctx sdk.Context
-	// cacheMS caches the `ctx.MultiStore()` to avoid type assertions all the time, `ctx.MultiStore()` is not modified during the whole time,
-	// which is evident by `ctx.WithMultiStore` is not called after statedb constructed.
+	// cacheMS caches the `ctx.MultiStore()` when the statedb is constructed, and
+	// keep updated whenever the native action is executed successfully.
 	cacheMS types.CacheMultiStore
-
-	// the action to commit native state, there are two cases:
-	// if the parent store is not `cachemulti.Store`, we create a new one, and call `Write` to commit, this could only happen in unit tests.
-	// if the parent store is already a `cachemulti.Store`, we branch it and call `Restore` to commit.
+	// commitMS is a stack of commit functions, it's used to commit the cumulative native state changes.
+	// if there's any error during executing native action, it is reduced by 1.
+	// journal reverting is from latest to oldest(= stacked), so it's should be safe to reduce the stack from top.
 	commitMS []func()
 
 	// Journal of state modifications. This is the backbone of
@@ -349,14 +348,17 @@ func (s *StateDB) setStateObject(object *stateObject) {
 	s.stateObjects[object.Address()] = object
 }
 
-// TODO(zsystm): Use or remove this function, currently testing other way.
-//
-//	func (s *StateDB) snapshotNativeState() types.CacheMultiStore {
-//		snapshot := s.cacheMS.CacheMultiStore()
-//		s.commitMS = append(s.commitMS, snapshot.Write)
-//		return snapshot
-//	}
-func (s *StateDB) revertNativeStateToSnapshot(ms types.MultiStore) {
+// cacheSnapshot creates a cache of snapshot and updates the context with the new cache store.
+// CRITICAL: this updates ctx.MultiStore() to the new cache store, be careful to use it.
+func (s *StateDB) cacheSnapshot(snapshot types.CacheMultiStore) types.CacheMultiStore {
+	cached := snapshot.CacheMultiStore()
+	s.commitMS = append(s.commitMS, cached.Write)
+	s.ctx = s.ctx.WithMultiStore(cached)
+	return cached
+}
+
+func (s *StateDB) revertNativeStateToSnapshot(ms types.CacheMultiStore) {
+	s.cacheMS = ms
 	s.ctx = s.ctx.WithMultiStore(ms)
 	s.commitMS = s.commitMS[:len(s.commitMS)-1]
 }
@@ -365,24 +367,21 @@ func (s *StateDB) revertNativeStateToSnapshot(ms types.MultiStore) {
 // the writes will be revert when either the native action itself fail
 // or the wrapping message call reverted.
 func (s *StateDB) ExecuteNativeAction(contract common.Address, converter EventConverter, action func(ctx sdk.Context) error) error {
-	orig := s.cacheMS
-	// cache the orig to avoid the cacheMS being modified by the action
-	cached := orig.CacheMultiStore()
-	s.commitMS = append(s.commitMS, cached.Write)
+	snapshot := s.cacheMS
+	// cache the snapshot to avoid the cacheMS(= latest storage pointer) being modified by the action which failed
+	cached := s.cacheSnapshot(snapshot)
 	eventManager := sdk.NewEventManager()
-
-	s.ctx = s.ctx.WithMultiStore(cached)
 	if err := action(s.ctx.WithEventManager(eventManager)); err != nil {
-		// revert the state to the orig state
-		s.revertNativeStateToSnapshot(orig)
+		// revert the state to the snapshot which is before the action
+		s.revertNativeStateToSnapshot(snapshot)
 		return err
 	}
 	events := eventManager.Events()
 	s.emitNativeEvents(contract, converter, events)
 	s.nativeEvents = s.nativeEvents.AppendEvents(events)
 	// journal for reverting case
-	s.journal.append(nativeChange{snapshot: orig, events: len(events)})
-	// update latest cacheMS to the new one
+	s.journal.append(nativeChange{snapshot: snapshot, events: len(events)})
+	// update latest cacheMS to the new one because the action is successful
 	s.cacheMS = cached
 	return nil
 }

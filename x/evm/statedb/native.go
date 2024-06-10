@@ -8,7 +8,7 @@ import (
 var _ JournalEntry = nativeChange{}
 
 type nativeChange struct {
-	snapshot types.MultiStore
+	snapshot types.CacheMultiStore
 	events   int
 }
 
