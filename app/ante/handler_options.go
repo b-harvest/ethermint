@@ -81,7 +81,6 @@ func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		NewEthGasConsumeDecorator(options.EvmKeeper, options.MaxTxGasWanted),
 		NewEthIncrementSenderSequenceDecorator(options.AccountKeeper), // innermost AnteDecorator.
 		NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
-		NewEthEmitEventDecorator(options.EvmKeeper), // emit eth tx hash and index at the very last ante handler.
 	)
 }
 
