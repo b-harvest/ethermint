@@ -104,7 +104,7 @@ func getBlockValue(block *sdkmath.Int) *big.Int {
 		return nil
 	}
 
-	return block.BigInt()
+	return block.BigIntMut()
 }
 
 // Validate performs a basic validation of the ChainConfig params. The function will return an error

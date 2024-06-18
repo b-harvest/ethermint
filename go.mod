@@ -30,6 +30,7 @@ require (
 	github.com/cosmos/ibc-go/modules/capability v1.0.0
 	github.com/cosmos/ibc-go/v8 v8.2.1
 	github.com/cosmos/rosetta v0.0.0-20231205133638-3bc76705a1c6
+	github.com/crypto-org-chain/go-block-stm v0.0.0-20240408005941-8581dfb69ce4
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/gogo/protobuf v1.3.2
@@ -254,4 +255,5 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.50.6-0.20240528102815-eee3c28376e0
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	github.com/tidwall/btree => github.com/crypto-org-chain/btree v0.0.0-20240406140148-2687063b042c
 )

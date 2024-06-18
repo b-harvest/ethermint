@@ -55,6 +55,27 @@ func DecodeTxResponse(in []byte) (*MsgEthereumTxResponse, error) {
 	return &res, nil
 }
 
+// DecodeTxResponses decodes a protobuf-encoded byte slice into TxResponses
+func DecodeTxResponses(in []byte) ([]*MsgEthereumTxResponse, error) {
+	var txMsgData sdk.TxMsgData
+	if err := proto.Unmarshal(in, &txMsgData); err != nil {
+		return nil, err
+	}
+	responses := make([]*MsgEthereumTxResponse, 0, len(txMsgData.MsgResponses))
+	for _, res := range txMsgData.MsgResponses {
+		var response MsgEthereumTxResponse
+		if res.TypeUrl != "/"+proto.MessageName(&response) {
+			continue
+		}
+		err := proto.Unmarshal(res.Value, &response)
+		if err != nil {
+			return nil, errorsmod.Wrap(err, "failed to unmarshal tx response message data")
+		}
+		responses = append(responses, &response)
+	}
+	return responses, nil
+}
+
 // EncodeTransactionLogs encodes TransactionLogs slice into a protobuf-encoded byte slice.
 func EncodeTransactionLogs(res *TransactionLogs) ([]byte, error) {
 	return proto.Marshal(res)

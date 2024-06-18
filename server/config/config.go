@@ -75,9 +75,16 @@ const (
 
 	// DefaultMaxOpenConnections represents the amount of open connections (unlimited = 0)
 	DefaultMaxOpenConnections = 0
+
+	BlockExecutorSequential = "sequential"
+	BlockExecutorBlockSTM   = "block-stm"
 )
 
-var evmTracers = []string{"json", "markdown", "struct", "access_list"}
+var (
+	evmTracers = []string{"json", "markdown", "struct", "access_list"}
+
+	blockExecutors = []string{BlockExecutorSequential, BlockExecutorBlockSTM}
+)
 
 // Config defines the server's top level configuration. It includes the default app config
 // from the SDK as well as the EVM configuration to enable the JSON-RPC APIs.
@@ -96,6 +103,10 @@ type EVMConfig struct {
 	Tracer string `mapstructure:"tracer"`
 	// MaxTxGasWanted defines the gas wanted for each eth tx returned in ante handler in check tx mode.
 	MaxTxGasWanted uint64 `mapstructure:"max-tx-gas-wanted"`
+	// BlockExecutor set block executor type, "block-stm" for parallel execution, "sequential" for sequential execution.
+	BlockExecutor string `mapstructure:"block-executor"`
+	// BlockSTMWorkers is the number of workers for block-stm execution, `0` means using all available CPUs.
+	BlockSTMWorkers int `mapstructure:"block-stm-workers"`
 }
 
 // JSONRPCConfig defines configuration for the EVM RPC server.
@@ -198,6 +209,7 @@ func DefaultEVMConfig() *EVMConfig {
 	return &EVMConfig{
 		Tracer:         DefaultEVMTracer,
 		MaxTxGasWanted: DefaultMaxTxGasWanted,
+		BlockExecutor:  BlockExecutorSequential,
 	}
 }
 
@@ -205,6 +217,10 @@ func DefaultEVMConfig() *EVMConfig {
 func (c EVMConfig) Validate() error {
 	if c.Tracer != "" && !strings.StringInSlice(c.Tracer, evmTracers) {
 		return fmt.Errorf("invalid tracer type %s, available types: %v", c.Tracer, evmTracers)
+	}
+
+	if !strings.StringInSlice(c.BlockExecutor, blockExecutors) {
+		return fmt.Errorf("invalid block executor type %s, available types: %v", c.BlockExecutor, blockExecutors)
 	}
 
 	return nil
@@ -330,8 +346,10 @@ func GetConfig(v *viper.Viper) (Config, error) {
 	return Config{
 		Config: cfg,
 		EVM: EVMConfig{
-			Tracer:         v.GetString("evm.tracer"),
-			MaxTxGasWanted: v.GetUint64("evm.max-tx-gas-wanted"),
+			Tracer:          v.GetString("evm.tracer"),
+			MaxTxGasWanted:  v.GetUint64("evm.max-tx-gas-wanted"),
+			BlockExecutor:   v.GetString("evm.block-executor"),
+			BlockSTMWorkers: v.GetInt("evm.block-stm-workers"),
 		},
 		JSONRPC: JSONRPCConfig{
 			Enable:                   v.GetBool("json-rpc.enable"),

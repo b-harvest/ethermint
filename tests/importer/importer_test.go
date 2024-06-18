@@ -263,7 +263,7 @@ func applyTransaction(
 
 	// if the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil {
-		receipt.ContractAddress = crypto.CreateAddress(vmenv.TxContext.Origin, tx.Nonce())
+		receipt.ContractAddress = crypto.CreateAddress(vmenv.Origin, tx.Nonce())
 	}
 
 	// Set the receipt logs and create a bloom for filtering

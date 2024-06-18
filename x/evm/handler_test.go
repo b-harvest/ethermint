@@ -43,7 +43,7 @@ func (suite *HandlerTestSuite) SetupTest() {
 	coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(100000000000000)))
 
 	t := suite.T()
-	suite.SetupTestWithCb(t, func(app *app.EthermintApp, genesis app.GenesisState) app.GenesisState {
+	suite.SetupTestWithCb(t, func(app *app.EthermintApp, genesis testutil.GenesisState) testutil.GenesisState {
 		b32address := sdk.MustBech32ifyAddressBytes(sdk.GetConfig().GetBech32AccountAddrPrefix(), suite.ConsPubKey.Address().Bytes())
 		balances := []banktypes.Balance{
 			{

@@ -52,7 +52,7 @@ func (suite *MsgsTestSuite) SetupTest() {
 	suite.chainID = big.NewInt(1)
 	suite.hundredBigInt = big.NewInt(100)
 
-	encodingConfig := encoding.MakeTestEncodingConfig(evm.AppModuleBasic{})
+	encodingConfig := encoding.MakeEncodingConfig(evm.AppModuleBasic{})
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 }
 

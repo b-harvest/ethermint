@@ -48,14 +48,16 @@ var DefaultConsensusParams = &cmtproto.ConsensusParams{
 	},
 }
 
+type GenesisState map[string]json.RawMessage
+
 // Setup initializes a new EthermintApp. A Nop logger is set in EthermintApp.
-func Setup(isCheckTx bool, patch func(*app.EthermintApp, app.GenesisState) app.GenesisState) *app.EthermintApp {
+func Setup(isCheckTx bool, patch func(*app.EthermintApp, GenesisState) GenesisState) *app.EthermintApp {
 	return SetupWithDB(isCheckTx, patch, dbm.NewMemDB())
 }
 
 func SetupWithOpts(
 	isCheckTx bool,
-	patch func(*app.EthermintApp, app.GenesisState) app.GenesisState,
+	patch func(*app.EthermintApp, GenesisState) GenesisState,
 	appOptions simtestutil.AppOptionsMap,
 ) *app.EthermintApp {
 	return SetupWithDBAndOpts(isCheckTx, patch, dbm.NewMemDB(), appOptions)
@@ -63,14 +65,14 @@ func SetupWithOpts(
 
 const ChainID = "ethermint_9000-1"
 
-func SetupWithDB(isCheckTx bool, patch func(*app.EthermintApp, app.GenesisState) app.GenesisState, db dbm.DB) *app.EthermintApp {
+func SetupWithDB(isCheckTx bool, patch func(*app.EthermintApp, GenesisState) GenesisState, db dbm.DB) *app.EthermintApp {
 	return SetupWithDBAndOpts(isCheckTx, patch, db, nil)
 }
 
 // SetupWithDBAndOpts initializes a new EthermintApp. A Nop logger is set in EthermintApp.
 func SetupWithDBAndOpts(
 	isCheckTx bool,
-	patch func(*app.EthermintApp, app.GenesisState) app.GenesisState,
+	patch func(*app.EthermintApp, GenesisState) GenesisState,
 	db dbm.DB,
 	appOptions simtestutil.AppOptionsMap,
 ) *app.EthermintApp {

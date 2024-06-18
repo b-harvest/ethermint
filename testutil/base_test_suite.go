@@ -83,14 +83,14 @@ func (suite *BaseTestSuite) SetupTest() {
 
 func (suite *BaseTestSuite) SetupTestWithCb(
 	t require.TestingT,
-	patch func(*app.EthermintApp, app.GenesisState) app.GenesisState,
+	patch func(*app.EthermintApp, GenesisState) GenesisState,
 ) {
 	suite.SetupTestWithCbAndOpts(t, patch, nil)
 }
 
 func (suite *BaseTestSuite) SetupTestWithCbAndOpts(
 	_ require.TestingT,
-	patch func(*app.EthermintApp, app.GenesisState) app.GenesisState,
+	patch func(*app.EthermintApp, GenesisState) GenesisState,
 	appOptions simtestutil.AppOptionsMap,
 ) {
 	checkTx := false
@@ -121,14 +121,14 @@ func (suite *BaseTestSuiteWithAccount) SetupTest(t require.TestingT) {
 
 func (suite *BaseTestSuiteWithAccount) SetupTestWithCb(
 	t require.TestingT,
-	patch func(*app.EthermintApp, app.GenesisState) app.GenesisState,
+	patch func(*app.EthermintApp, GenesisState) GenesisState,
 ) {
 	suite.SetupTestWithCbAndOpts(t, patch, nil)
 }
 
 func (suite *BaseTestSuiteWithAccount) SetupTestWithCbAndOpts(
 	t require.TestingT,
-	patch func(*app.EthermintApp, app.GenesisState) app.GenesisState,
+	patch func(*app.EthermintApp, GenesisState) GenesisState,
 	appOptions simtestutil.AppOptionsMap,
 ) {
 	suite.SetupAccount(t)
@@ -304,7 +304,7 @@ func (suite *BaseTestSuiteWithFeeMarketQueryClient) SetupTest() {
 
 func (suite *BaseTestSuiteWithFeeMarketQueryClient) SetupTestWithCb(
 	t require.TestingT,
-	patch func(*app.EthermintApp, app.GenesisState) app.GenesisState,
+	patch func(*app.EthermintApp, GenesisState) GenesisState,
 ) {
 	suite.BaseTestSuite.SetupTestWithCb(t, patch)
 	suite.Setup(&suite.BaseTestSuite)
@@ -321,7 +321,7 @@ func (suite *EVMTestSuiteWithAccountAndQueryClient) SetupTest(t require.TestingT
 
 func (suite *EVMTestSuiteWithAccountAndQueryClient) SetupTestWithCb(
 	t require.TestingT,
-	patch func(*app.EthermintApp, app.GenesisState) app.GenesisState,
+	patch func(*app.EthermintApp, GenesisState) GenesisState,
 ) {
 	suite.BaseTestSuiteWithAccount.SetupTestWithCb(t, patch)
 	suite.Setup(&suite.BaseTestSuite)
@@ -400,7 +400,7 @@ func (suite *EVMTestSuiteWithAccountAndQueryClient) EvmDenom() string {
 }
 
 // NewTestGenesisState generate genesis state with single validator
-func NewTestGenesisState(codec codec.Codec, genesisState map[string]json.RawMessage) app.GenesisState {
+func NewTestGenesisState(codec codec.Codec, genesisState map[string]json.RawMessage) GenesisState {
 	privVal := mock.NewPV()
 	pubKey, err := privVal.GetPubKey()
 	if err != nil {
@@ -420,10 +420,10 @@ func NewTestGenesisState(codec codec.Codec, genesisState map[string]json.RawMess
 	return genesisStateWithValSet(codec, genesisState, valSet, []authtypes.GenesisAccount{acc}, balance)
 }
 
-func genesisStateWithValSet(codec codec.Codec, genesisState app.GenesisState,
+func genesisStateWithValSet(codec codec.Codec, genesisState GenesisState,
 	valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount,
 	balances ...banktypes.Balance,
-) app.GenesisState {
+) GenesisState {
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
 	genesisState[authtypes.ModuleName] = codec.MustMarshalJSON(authGenesis)

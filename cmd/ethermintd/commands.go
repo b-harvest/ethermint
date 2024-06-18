@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	ethermint "github.com/evmos/ethermint/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,6 +28,7 @@ import (
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 
 	"cosmossdk.io/log"
+	"cosmossdk.io/simapp/params"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
@@ -60,7 +60,7 @@ import (
 
 func initRootCmd(
 	app *ethermintapp.EthermintApp,
-	encodingConfig ethermint.EncodingConfig,
+	encodingConfig params.EncodingConfig,
 	rootCmd *cobra.Command,
 	txConfig client.TxConfig,
 	basicManager module.BasicManager,

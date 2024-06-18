@@ -248,7 +248,7 @@ func buildEthTx(
 }
 
 func prepareEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereumTx) []byte {
-	encodingConfig := encoding.MakeTestEncodingConfig(evm.AppModuleBasic{})
+	encodingConfig := encoding.MakeEncodingConfig(evm.AppModuleBasic{})
 	option, err := codectypes.NewAnyWithValue(&evmtypes.ExtensionOptionsEthereumTx{})
 	s.Require().NoError(err)
 

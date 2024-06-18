@@ -21,25 +21,23 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
-	"cosmossdk.io/client/v2/autocli"
-	"cosmossdk.io/core/appmodule"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/evmos/ethermint/encoding"
-	"github.com/evmos/ethermint/x/evm/vm/geth"
 
-	"cosmossdk.io/log"
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cast"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmos "github.com/cometbft/cometbft/libs/os"
+
+	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/core/appmodule"
+	"cosmossdk.io/log"
 	"cosmossdk.io/simapp"
 	dbm "github.com/cosmos/cosmos-db"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
@@ -51,6 +49,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
+	simappparams "cosmossdk.io/simapp/params"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/evidence"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
@@ -61,6 +60,7 @@ import (
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/server"
 	testdata_pulsar "github.com/cosmos/cosmos-sdk/testutil/testdata/testpb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	mempool "github.com/cosmos/cosmos-sdk/types/mempool"
@@ -83,6 +83,8 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
+	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
@@ -115,46 +117,35 @@ import (
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
-	//nolint:staticcheck
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/evmos/ethermint/client/docs/statik"
+	"github.com/evmos/ethermint/encoding"
 
 	"github.com/evmos/ethermint/app/ante"
 	"github.com/evmos/ethermint/ethereum/eip712"
+	srvconfig "github.com/evmos/ethermint/server/config"
 	srvflags "github.com/evmos/ethermint/server/flags"
 	ethermint "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/evmos/ethermint/x/evm/vm/geth"
 	"github.com/evmos/ethermint/x/feemarket"
 	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-
-	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
-	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 
 	// Force-load the tracer engines to trigger registration due to Go-Ethereum v1.10.15 changes
 	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
 )
-
-func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-
-	DefaultNodeHome = filepath.Join(userHomeDir, ".ethermintd")
-}
 
 const appName = "ethermintd"
 
@@ -182,8 +173,6 @@ var (
 	_ runtime.AppI            = (*EthermintApp)(nil)
 	_ servertypes.Application = (*EthermintApp)(nil)
 )
-
-type GenesisState map[string]json.RawMessage
 
 // EthermintApp implements an extended ABCI application. It is an application
 // that may process transactions through Ethereum's EVM running atop of
@@ -238,6 +227,15 @@ type EthermintApp struct {
 	configurator module.Configurator
 }
 
+func init() {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+
+	DefaultNodeHome = filepath.Join(userHomeDir, ".ethermintd")
+}
+
 // NewEthermintApp returns a reference to a new initialized Ethermint application.
 func NewEthermintApp(
 	logger log.Logger,
@@ -250,11 +248,11 @@ func NewEthermintApp(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *EthermintApp {
-	encodingConfig := encoding.MakeConfig()
+	encodingConfig := encoding.MakeEncodingConfig()
 	eip712.SetEncodingConfig(encodingConfig)
 
 	appCodec := encodingConfig.Codec
-	amino := encodingConfig.Amino
+	legacyAmino := encodingConfig.Amino
 	txConfig := encodingConfig.TxConfig
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
@@ -276,26 +274,25 @@ func NewEthermintApp(
 		app.SetProcessProposal(handler.ProcessProposalHandler())
 	})
 
-	bApp := baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(appName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
-	bApp.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
-	bApp.SetTxEncoder(encodingConfig.TxConfig.TxEncoder())
+	bApp.SetInterfaceRegistry(interfaceRegistry)
+	bApp.SetTxEncoder(txConfig.TxEncoder())
 
 	keys := storetypes.NewKVStoreKeys(
 		// SDK keys
-		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
+		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
-		govtypes.StoreKey, paramstypes.StoreKey, consensusparamtypes.StoreKey,
-		upgradetypes.StoreKey, feegrant.StoreKey, evidencetypes.StoreKey,
-		authzkeeper.StoreKey, crisistypes.StoreKey,
+		govtypes.StoreKey, paramstypes.StoreKey, consensusparamtypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
+		evidencetypes.StoreKey, authzkeeper.StoreKey,
 		// ibc keys
 		ibcexported.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		// ethermint keys
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 	)
 
-	// register streaming services if enabled
+	// register streaming services
 	if err := bApp.RegisterStreamingServices(appOpts, keys); err != nil {
 		panic(err)
 	}
@@ -305,7 +302,7 @@ func NewEthermintApp(
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 	app := &EthermintApp{
 		BaseApp:           bApp,
-		legacyAmino:       amino,
+		legacyAmino:       legacyAmino,
 		appCodec:          appCodec,
 		txConfig:          txConfig,
 		interfaceRegistry: interfaceRegistry,
@@ -314,23 +311,36 @@ func NewEthermintApp(
 		memKeys:           memKeys,
 	}
 
-	// init params keeper and subspaces
-	app.ParamsKeeper = initParamsKeeper(appCodec, app.LegacyAmino(), keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
+	executor := cast.ToString(appOpts.Get(srvflags.EVMBlockExecutor))
+	switch executor {
+	case srvconfig.BlockExecutorBlockSTM:
+		sdk.SetAddrCacheEnabled(false)
+		workers := cast.ToInt(appOpts.Get(srvflags.EVMBlockSTMWorkers))
+		app.SetTxExecutor(STMTxExecutor(app.GetStoreKeys(), workers))
+	case "", srvconfig.BlockExecutorSequential:
+		app.SetTxExecutor(DefaultTxExecutor)
+	default:
+		panic(fmt.Errorf("unknown EVM block executor: %s", executor))
+	}
 
-	// get authority address
-	authAddr := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+	// init params keeper and subspaces
+	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
 	// set the BaseApp's parameter store
 	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(
-		app.AppCodec(),
+		appCodec,
 		runtime.NewKVStoreService(keys[consensusparamtypes.StoreKey]),
-		authAddr,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.EventService{},
 	)
 	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
 	// add capability keeper and ScopeToModule for ibc module
-	app.CapabilityKeeper = capabilitykeeper.NewKeeper(app.AppCodec(), keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
+	app.CapabilityKeeper = capabilitykeeper.NewKeeper(
+		appCodec,
+		keys[capabilitytypes.StoreKey],
+		memKeys[capabilitytypes.MemStoreKey],
+	)
 
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
@@ -341,20 +351,20 @@ func NewEthermintApp(
 
 	// use custom Ethermint account for contracts
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
-		app.AppCodec(),
+		appCodec,
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
 		ethermint.ProtoAccount,
 		maccPerms,
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
-		sdk.GetConfig().GetBech32AccountAddrPrefix(),
-		authAddr,
+		sdk.Bech32MainPrefix,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
-		app.AppCodec(),
+		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
 		app.AccountKeeper,
 		app.BlockedAddrs(),
-		authAddr,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		logger,
 		tkeys[banktypes.TStoreKey],
 	)
@@ -375,90 +385,75 @@ func NewEthermintApp(
 	// app.txConfig = txConfig
 
 	app.StakingKeeper = stakingkeeper.NewKeeper(
-		app.AppCodec(),
+		appCodec,
 		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		authAddr,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
-
-	app.DistrKeeper = distrkeeper.NewKeeper(
-		app.AppCodec(),
-		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,
-		authtypes.FeeCollectorName,
-		authAddr,
-	)
-	app.SlashingKeeper = slashingkeeper.NewKeeper(
-		app.AppCodec(),
-		app.LegacyAmino(),
-		runtime.NewKVStoreService(keys[slashingtypes.StoreKey]),
-		app.StakingKeeper,
-		authAddr,
-	)
-	// register the staking hooks
-	app.StakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(),
-			app.SlashingKeeper.Hooks(),
-		),
-	)
 	app.MintKeeper = mintkeeper.NewKeeper(
-		app.AppCodec(),
+		appCodec,
 		runtime.NewKVStoreService(keys[minttypes.StoreKey]),
 		app.StakingKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
 		authtypes.FeeCollectorName,
-		authAddr,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+	app.DistrKeeper = distrkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.StakingKeeper,
+		authtypes.FeeCollectorName,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+	app.SlashingKeeper = slashingkeeper.NewKeeper(
+		appCodec,
+		legacyAmino,
+		runtime.NewKVStoreService(keys[slashingtypes.StoreKey]),
+		app.StakingKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	app.CrisisKeeper = crisiskeeper.NewKeeper(
-		app.AppCodec(),
+		appCodec,
 		runtime.NewKVStoreService(keys[crisistypes.StoreKey]),
 		invCheckPeriod,
 		app.BankKeeper,
 		authtypes.FeeCollectorName,
-		authAddr,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.AccountKeeper.AddressCodec(),
 	)
-	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(app.AppCodec(), runtime.NewKVStoreService(keys[feegrant.StoreKey]), app.AccountKeeper)
-	app.UpgradeKeeper = upgradekeeper.NewKeeper(
-		skipUpgradeHeights,
-		runtime.NewKVStoreService(keys[upgradetypes.StoreKey]),
-		app.AppCodec(),
-		homePath,
-		app.BaseApp,
-		authAddr,
+	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[feegrant.StoreKey]),
+		app.AccountKeeper,
 	)
+
+	// register the staking hooks
+	app.StakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(),
+			app.SlashingKeeper.Hooks()),
+	)
+
 	app.AuthzKeeper = authzkeeper.NewKeeper(
 		runtime.NewKVStoreService(keys[authzkeeper.StoreKey]),
-		app.AppCodec(),
+		appCodec,
 		app.MsgServiceRouter(),
 		app.AccountKeeper,
 	)
 
-	// Create Ethermint keepers
-	feeMarketSs := app.GetSubspace(feemarkettypes.ModuleName)
-	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
-		app.AppCodec(),
-		authtypes.NewModuleAddress(govtypes.ModuleName),
-		runtime.NewKVStoreService(keys[feemarkettypes.StoreKey]),
-		tkeys[feemarkettypes.TransientKey],
-		feeMarketSs,
-	)
-	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
-	// Set authority to x/gov module account to only expect the module account to update params
-	evmSs := app.GetSubspace(evmtypes.ModuleName)
-	app.EvmKeeper = evmkeeper.NewKeeper(
-		app.AppCodec(),
-		runtime.NewKVStoreService(keys[evmtypes.StoreKey]),
-		tkeys[evmtypes.TransientKey],
-		authtypes.NewModuleAddress(govtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
-		nil, geth.NewEVM, tracer, evmSs,
+	// set the governance module account as the authority for conducting upgrades
+	app.UpgradeKeeper = upgradekeeper.NewKeeper(
+		skipUpgradeHeights,
+		runtime.NewKVStoreService(keys[upgradetypes.StoreKey]),
+		appCodec,
+		homePath,
+		app.BaseApp,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	// register the proposal types
@@ -473,8 +468,13 @@ func NewEthermintApp(
 	govKeeper := govkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
-		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.DistrKeeper,
-		app.MsgServiceRouter(), govConfig, authAddr,
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.StakingKeeper,
+		app.DistrKeeper,
+		app.MsgServiceRouter(),
+		govConfig,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	// Set legacy router for backwards compatibility with gov v1beta1
@@ -486,39 +486,77 @@ func NewEthermintApp(
 		),
 	)
 
-	// Create IBC Keeper
-	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec, keys[ibcexported.StoreKey],
-		app.GetSubspace(ibcexported.ModuleName),
-		app.StakingKeeper,
-		app.UpgradeKeeper,
-		scopedIBCKeeper,
-		authAddr,
-	)
-
-	// Create Transfer Keepers
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper, authAddr,
-	)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
-
-	// Create static IBC router, add transfer route, then set and seal it
-	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
-	app.IBCKeeper.SetRouter(ibcRouter)
-
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[evidencetypes.StoreKey]),
-		app.StakingKeeper, app.SlashingKeeper,
+		app.StakingKeeper,
+		app.SlashingKeeper,
 		app.AccountKeeper.AddressCodec(),
 		runtime.ProvideCometInfoService(),
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
+
+	// Create IBC Keeper
+	app.IBCKeeper = ibckeeper.NewKeeper(
+		appCodec,
+		keys[ibcexported.StoreKey],
+		app.GetSubspace(ibcexported.ModuleName),
+		app.StakingKeeper,
+		app.UpgradeKeeper,
+		scopedIBCKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	// Create IBC Router
+	ibcRouter := porttypes.NewRouter()
+
+	// Create Transfer Keeper and pass IBCFeeKeeper as expected Channel and PortKeeper
+	// since fee middleware will wrap the IBCKeeper for underlying application.
+	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
+		nil, // ISC4 Wrapper: fee IBC middleware
+		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.PortKeeper,
+		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	// Create Transfer Stack
+	// SendPacket, since it is originating from the application to core IBC:
+	// transferKeeper.SendPacket -> fee.SendPacket -> channel.SendPacket
+
+	// RecvPacket, message that originates from core IBC and goes down to app, the flow is the other way
+	// channel.RecvPacket -> fee.OnRecvPacket -> transfer.OnRecvPacket
+
+	// transfer stack contains (from top to bottom):
+	// - IBC Fee Middleware
+	// - Transfer
+
+	// create IBC module from bottom to top of stack
+	transferStack := transfer.NewIBCModule(app.TransferKeeper)
+
+	// Add transfer stack to IBC Router
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
+
+	// Seal the IBC Router
+	app.IBCKeeper.SetRouter(ibcRouter)
+
+	// Create Ethermint keepers
+	feeMarketSs := app.GetSubspace(feemarkettypes.ModuleName)
+	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
+		appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
+		runtime.NewKVStoreService(keys[feemarkettypes.StoreKey]), tkeys[feemarkettypes.TransientKey], feeMarketSs,
+	)
+
+	// Set authority to x/gov module account to only expect the module account to update params
+	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
+	evmSs := app.GetSubspace(evmtypes.ModuleName)
+	app.EvmKeeper = evmkeeper.NewKeeper(
+		appCodec, runtime.NewKVStoreService(keys[evmtypes.StoreKey]), tkeys[evmtypes.TransientKey], authtypes.NewModuleAddress(govtypes.ModuleName),
+		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
+		nil, geth.NewEVM, tracer, evmSs,
+	)
 
 	/****  Module Options ****/
 
@@ -537,7 +575,6 @@ func NewEthermintApp(
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -561,17 +598,18 @@ func NewEthermintApp(
 
 		// ibc modules
 		ibc.NewAppModule(app.IBCKeeper),
-		// TODO(zsystm): Cronos added ibctm.AppModule. Check if we needed that module Ethermint
 		transfer.NewAppModule(app.TransferKeeper),
+		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
+
 		// Ethermint app modules
 		feemarket.NewAppModule(app.FeeMarketKeeper, feeMarketSs),
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, evmSs),
 	)
 
-	// BasicModuleManager defines the module BasicManager which is in charge of setting up basic,
+	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration and genesis verification.
-	// By default, it is composed of all the modules from the module manager.
-	// Additionally, app module basics can be overwritten by passing them as an argument.
+	// By default it is composed of all the module from the module manager.
+	// Additionally, app module basics can be overwritten by passing them as argument.
 	app.BasicModuleManager = module.NewBasicManagerFromManager(
 		app.ModuleManager,
 		map[string]module.AppModuleBasic{
@@ -581,16 +619,14 @@ func NewEthermintApp(
 					paramsclient.ProposalHandler,
 				},
 			),
-		},
-	)
-	app.BasicModuleManager.RegisterLegacyAminoCodec(app.LegacyAmino())
-	app.BasicModuleManager.RegisterInterfaces(app.InterfaceRegistry())
+		})
+	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
+	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
 
 	// NOTE: upgrade module is required to be prioritized
 	app.ModuleManager.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
 	)
-
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
@@ -598,44 +634,44 @@ func NewEthermintApp(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.ModuleManager.SetOrderBeginBlockers(
-		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
-		feemarkettypes.ModuleName,
-		evmtypes.ModuleName,
-		minttypes.ModuleName,
 		distrtypes.ModuleName,
-		slashingtypes.ModuleName,
-		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
+		slashingtypes.ModuleName,
+		minttypes.ModuleName,
 		ibcexported.ModuleName,
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
+		evidencetypes.ModuleName,
 		authz.ModuleName,
 		// no-op modules
-		ibctransfertypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		govtypes.ModuleName,
-		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
+		ibctransfertypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
+		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		crisistypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
 	app.ModuleManager.SetOrderEndBlockers(
-		banktypes.ModuleName,
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
-		stakingtypes.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		feegrant.ModuleName,
 		// no-op modules
-		capabilitytypes.ModuleName,
+		stakingtypes.ModuleName,
 		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
+		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
+		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		minttypes.ModuleName,
@@ -690,12 +726,13 @@ func NewEthermintApp(
 
 	app.ModuleManager.RegisterInvariants(app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	if err := app.ModuleManager.RegisterServices(app.configurator); err != nil {
+	err := app.ModuleManager.RegisterServices(app.configurator)
+	if err != nil {
 		panic(err)
 	}
 
 	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
-	// Make sure it's called after `app.ModuleManager` and `app.configurator` are set.
+	// Make sure it's called after `app.mm` and `app.configurator` are set.
 	app.RegisterUpgradeHandlers(app.appCodec, app.IBCKeeper.ClientKeeper, app.ConsensusParamsKeeper, app.ParamsKeeper)
 
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.ModuleManager.Modules))
@@ -717,6 +754,7 @@ func NewEthermintApp(
 		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 	}
 	app.sm = module.NewSimulationManagerFromAppModules(app.ModuleManager.Modules, overrideModules)
+
 	app.sm.RegisterStoreDecoders()
 
 	// initialize stores
@@ -726,10 +764,11 @@ func NewEthermintApp(
 
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
-	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
+	app.SetPreBlocker(app.PreBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.setAnteHandler(txConfig, cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted)))
+
 	// In v0.46, the SDK introduces _postHandlers_. PostHandlers are like
 	// antehandlers, but are run _after_ the `runMsgs` execution. They are also
 	// defined as a chain, and have the same signature as antehandlers.
@@ -757,6 +796,7 @@ func NewEthermintApp(
 		// want to panic here instead of logging a warning.
 		fmt.Fprintln(os.Stderr, err.Error())
 	}
+
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(err.Error())
@@ -771,25 +811,27 @@ func NewEthermintApp(
 
 // use Ethermint's custom AnteHandler
 func (app *EthermintApp) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
-	anteHandler, err := ante.NewAnteHandler(ante.HandlerOptions{
-		AccountKeeper:          app.AccountKeeper,
-		BankKeeper:             app.BankKeeper,
-		SignModeHandler:        txConfig.SignModeHandler(),
-		FeegrantKeeper:         app.FeeGrantKeeper,
-		SigGasConsumer:         ante.DefaultSigVerificationGasConsumer,
-		IBCKeeper:              app.IBCKeeper,
-		EvmKeeper:              app.EvmKeeper,
-		FeeMarketKeeper:        app.FeeMarketKeeper,
-		MaxTxGasWanted:         maxGasWanted,
-		ExtensionOptionChecker: ethermint.HasDynamicFeeExtensionOption,
-		DynamicFeeChecker:      true,
-		DisabledAuthzMsgs: []string{
-			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
-			sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
-			sdk.MsgTypeURL(&vestingtypes.MsgCreatePermanentLockedAccount{}),
-			sdk.MsgTypeURL(&vestingtypes.MsgCreatePeriodicVestingAccount{}),
+	anteHandler, err := ante.NewAnteHandler(
+		ante.HandlerOptions{
+			AccountKeeper:          app.AccountKeeper,
+			BankKeeper:             app.BankKeeper,
+			SignModeHandler:        txConfig.SignModeHandler(),
+			FeegrantKeeper:         app.FeeGrantKeeper,
+			SigGasConsumer:         ante.DefaultSigVerificationGasConsumer,
+			IBCKeeper:              app.IBCKeeper,
+			EvmKeeper:              app.EvmKeeper,
+			FeeMarketKeeper:        app.FeeMarketKeeper,
+			MaxTxGasWanted:         maxGasWanted,
+			ExtensionOptionChecker: ethermint.HasDynamicFeeExtensionOption,
+			DynamicFeeChecker:      true,
+			DisabledAuthzMsgs: []string{
+				sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
+				sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
+				sdk.MsgTypeURL(&vestingtypes.MsgCreatePermanentLockedAccount{}),
+				sdk.MsgTypeURL(&vestingtypes.MsgCreatePeriodicVestingAccount{}),
+			},
 		},
-	})
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -837,7 +879,7 @@ func (app *EthermintApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain
 		panic(err)
 	}
 	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.ModuleManager.GetVersionMap()); err != nil {
-		return nil, err
+		panic(err)
 	}
 	return app.ModuleManager.InitGenesis(ctx, app.appCodec, genesisState)
 }
@@ -878,12 +920,13 @@ func (app *EthermintApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
 }
 
+// TxConfig returns EthermintApp's TxConfig
 func (app *EthermintApp) TxConfig() client.TxConfig {
 	return app.txConfig
 }
 
-func (app *EthermintApp) EncodingConfig() ethermint.EncodingConfig {
-	return ethermint.EncodingConfig{
+func (app *EthermintApp) EncodingConfig() simappparams.EncodingConfig {
+	return simappparams.EncodingConfig{
 		InterfaceRegistry: app.InterfaceRegistry(),
 		Codec:             app.AppCodec(),
 		TxConfig:          app.TxConfig(),
@@ -902,6 +945,7 @@ func (app *EthermintApp) AutoCliOpts() autocli.AppOptions {
 			}
 		}
 	}
+
 	return autocli.AppOptions{
 		Modules:               modules,
 		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(app.ModuleManager.Modules),
@@ -937,6 +981,22 @@ func (app *EthermintApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 	return app.memKeys[storeKey]
 }
 
+// GetStoreKeys returns all the stored store keys.
+func (app *EthermintApp) GetStoreKeys() []storetypes.StoreKey {
+	keys := make([]storetypes.StoreKey, 0, len(app.keys))
+	for _, key := range app.keys {
+		keys = append(keys, key)
+	}
+	for _, key := range app.tkeys {
+		keys = append(keys, key)
+	}
+	for _, key := range app.memKeys {
+		keys = append(keys, key)
+	}
+	sort.SliceStable(keys, func(i, j int) bool { return keys[i].Name() < keys[j].Name() })
+	return keys
+}
+
 // GetSubspace returns a param subspace for a given module name.
 //
 // NOTE: This is solely to be used for testing purposes.
@@ -945,7 +1005,7 @@ func (app *EthermintApp) GetSubspace(moduleName string) paramstypes.Subspace {
 	return subspace
 }
 
-// SimulationManager implements the SimulationApp interface
+// SimulationManager implements runtime.AppI
 func (app *EthermintApp) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
@@ -956,8 +1016,10 @@ func (app *EthermintApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.
 	clientCtx := apiSvr.ClientCtx
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+
 	// Register new tendermint queries routes from grpc-gateway.
 	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+
 	// Register node gRPC service for grpc-gateway.
 	node.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
@@ -989,21 +1051,24 @@ func (app *EthermintApp) RegisterNodeService(clientCtx client.Context, cfg confi
 	node.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }
 
-// GetMaccPerms returns a copy of the module account permissions
 // GetStoreKey is used by unit test
 func (app *EthermintApp) GetStoreKey(name string) storetypes.StoreKey {
-	if key, ok := app.keys[name]; ok {
+	key, ok := app.keys[name]
+	if ok {
 		return key
 	}
-	if tkey, ok := app.tkeys[name]; ok {
+	tkey, ok := app.tkeys[name]
+	if ok {
 		return tkey
 	}
-	if mkey, ok := app.memKeys[name]; ok {
+	mkey, ok := app.memKeys[name]
+	if ok {
 		return mkey
 	}
 	return nil
 }
 
+// GetMaccPerms returns a copy of the module account permissions
 func GetMaccPerms() map[string][]string {
 	dupMaccPerms := make(map[string][]string)
 	for k, v := range maccPerms {

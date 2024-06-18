@@ -25,7 +25,7 @@ func TestTxEncoding(t *testing.T) {
 	err := msg.Sign(ethSigner, signer)
 	require.NoError(t, err)
 
-	cfg := encoding.MakeTestEncodingConfig(evm.AppModuleBasic{})
+	cfg := encoding.MakeEncodingConfig(evm.AppModuleBasic{})
 
 	_, err = cfg.TxConfig.TxEncoder()(msg)
 	require.Error(t, err, "encoding failed")

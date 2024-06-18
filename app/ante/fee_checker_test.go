@@ -51,7 +51,7 @@ func TestSDKTxFeeChecker(t *testing.T) {
 	//      with extension option
 	//      without extension option
 	//      london hardfork enableness
-	encodingConfig := encoding.MakeTestEncodingConfig()
+	encodingConfig := encoding.MakeEncodingConfig()
 	minGasPrices := sdk.NewDecCoins(sdk.NewDecCoin("aphoton", sdkmath.NewInt(10)))
 
 	genesisCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())

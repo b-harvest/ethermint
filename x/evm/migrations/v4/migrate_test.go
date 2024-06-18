@@ -29,7 +29,7 @@ func (ms mockSubspace) GetParamSetIfExists(ctx sdk.Context, ps types.LegacyParam
 }
 
 func TestMigrate(t *testing.T) {
-	encCfg := encoding.MakeTestEncodingConfig()
+	encCfg := encoding.MakeEncodingConfig()
 	cdc := encCfg.Codec
 
 	storeKey := storetypes.NewKVStoreKey(types.ModuleName)

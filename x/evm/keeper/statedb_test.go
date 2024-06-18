@@ -40,7 +40,7 @@ func TestStateDBTestSuite(t *testing.T) {
 
 func (suite *StateDBTestSuite) SetupTest() {
 	suite.EVMTestSuiteWithAccountAndQueryClient.SetupTest(suite.T())
-	encodingConfig := encoding.MakeConfig()
+	encodingConfig := encoding.MakeEncodingConfig()
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.App.EvmKeeper.ChainID())
 }

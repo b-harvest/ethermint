@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cosmossdk.io/simapp/params"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -9,14 +10,14 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+
 	"github.com/evmos/ethermint/encoding"
-	"github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm"
 	"github.com/evmos/ethermint/x/feemarket"
 )
 
-func MakeConfigForTest(moduleManager module.BasicManager) types.EncodingConfig {
-	config := encoding.MakeConfig()
+func MakeConfigForTest(moduleManager module.BasicManager) params.EncodingConfig {
+	config := encoding.MakeEncodingConfig()
 	if moduleManager == nil {
 		moduleManager = module.NewBasicManager(
 			auth.AppModuleBasic{},

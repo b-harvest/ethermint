@@ -79,7 +79,7 @@ func TestEIP712TestSuite(t *testing.T) {
 }
 
 func (suite *EIP712TestSuite) SetupTest() {
-	suite.config = encoding.MakeTestEncodingConfig(bank.AppModuleBasic{}, distribution.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
+	suite.config = encoding.MakeEncodingConfig(bank.AppModuleBasic{}, distribution.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
 	suite.clientCtx = client.Context{}.WithTxConfig(suite.config.TxConfig)
 	suite.denom = evmtypes.DefaultEVMDenom
 

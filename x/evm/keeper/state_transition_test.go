@@ -43,7 +43,7 @@ func (suite *StateTransitionTestSuite) SetupTest() {
 	coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(int64(params.TxGas)-1)))
 
 	t := suite.T()
-	suite.SetupTestWithCb(t, func(a *app.EthermintApp, genesis app.GenesisState) app.GenesisState {
+	suite.SetupTestWithCb(t, func(a *app.EthermintApp, genesis testutil.GenesisState) testutil.GenesisState {
 		feemarketGenesis := feemarkettypes.DefaultGenesisState()
 		feemarketGenesis.Params.NoBaseFee = true
 		genesis[feemarkettypes.ModuleName] = a.AppCodec().MustMarshalJSON(feemarketGenesis)

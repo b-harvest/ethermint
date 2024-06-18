@@ -197,5 +197,5 @@ func TestKVIndexer(t *testing.T) {
 
 // MakeEncodingConfig creates the EncodingConfig
 func MakeEncodingConfig() params.EncodingConfig {
-	return evmenc.MakeTestEncodingConfig(evm.AppModuleBasic{})
+	return evmenc.MakeEncodingConfig(evm.AppModuleBasic{})
 }

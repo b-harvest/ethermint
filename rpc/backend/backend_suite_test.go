@@ -67,7 +67,7 @@ func (suite *BackendTestSuite) SetupTest() {
 	suite.signer = tests.NewSigner(priv)
 	suite.Require().NoError(err)
 
-	encodingConfig := encoding.MakeTestEncodingConfig(evm.AppModuleBasic{})
+	encodingConfig := encoding.MakeEncodingConfig(evm.AppModuleBasic{})
 	clientCtx := client.Context{}.WithChainID(ChainID).
 		WithHeight(1).
 		WithTxConfig(encodingConfig.TxConfig).
@@ -164,7 +164,7 @@ func (suite *BackendTestSuite) buildFormattedBlock(
 
 func (suite *BackendTestSuite) generateTestKeyring(clientDir string) (keyring.Keyring, error) {
 	buf := bufio.NewReader(os.Stdin)
-	encCfg := encoding.MakeTestEncodingConfig()
+	encCfg := encoding.MakeEncodingConfig()
 	return keyring.New(sdk.KeyringServiceName(), keyring.BackendTest, clientDir, buf, encCfg.Codec, []keyring.Option{hd.EthSecp256k1Option()}...)
 }
 

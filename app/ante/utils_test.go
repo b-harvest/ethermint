@@ -138,7 +138,7 @@ func (suite *AnteTestSuite) SetupTest() {
 	acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr)
 	suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
-	encodingConfig := encoding.MakeTestEncodingConfig(auth.AppModuleBasic{}, authzmodule.AppModuleBasic{}, bank.AppModuleBasic{}, evidence.AppModuleBasic{}, evm.AppModuleBasic{}, feegrantmodule.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
+	encodingConfig := encoding.MakeEncodingConfig(auth.AppModuleBasic{}, authzmodule.AppModuleBasic{}, bank.AppModuleBasic{}, evidence.AppModuleBasic{}, evm.AppModuleBasic{}, feegrantmodule.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
 	// We're using TestMsg amino encoding in some tests, so register it here.
 	encodingConfig.Amino.RegisterConcrete(&testdata.TestMsg{}, "testdata.TestMsg", nil)
 	eip712.SetEncodingConfig(encodingConfig)
@@ -605,7 +605,7 @@ func (suite *AnteTestSuite) RegisterAccount(pubKey cryptotypes.PubKey, balance *
 	acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, sdk.AccAddress(pubKey.Address()))
 	suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
-	suite.app.EvmKeeper.SetBalance(suite.ctx, common.BytesToAddress(pubKey.Address()), balance)
+	suite.app.EvmKeeper.SetBalance(suite.ctx, common.BytesToAddress(pubKey.Address()), balance, evmtypes.DefaultEVMDenom)
 }
 
 // createSignerBytes generates sign doc bytes using the given parameters
