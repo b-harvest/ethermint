@@ -129,7 +129,6 @@ func NewLogFromEth(log *ethtypes.Log) *Log {
 	}
 
 	return &Log{
-		// Address:     HexAddress(log.Address.Bytes()),
 		Address:     log.Address.String(),
 		Topics:      topics,
 		Data:        log.Data,

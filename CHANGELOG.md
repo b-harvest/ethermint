@@ -300,11 +300,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### API Breaking
 
 - (rpc) [tharsis#1070](https://github.com/evmos/ethermint/pull/1070) Refactor `rpc/` package:
-    - `Backend` interface is now `BackendI`, which implements `EVMBackend` (for Ethereum namespaces) and `CosmosBackend` (for Cosmos namespaces)
-    - Previous `EVMBackend` type is now `Backend`, which is the concrete implementation of `BackendI`
-    - Move `rpc/ethereum/types` -> `rpc/types`
-    - Move `rpc/ethereum/backend` -> `rpc/backend`
-    - Move `rpc/ethereum/namespaces` -> `rpc/namespaces/ethereum`
+  - `Backend` interface is now `BackendI`, which implements `EVMBackend` (for Ethereum namespaces) and `CosmosBackend` (for Cosmos namespaces)
+  - Previous `EVMBackend` type is now `Backend`, which is the concrete implementation of `BackendI`
+  - Move `rpc/ethereum/types` -> `rpc/types`
+  - Move `rpc/ethereum/backend` -> `rpc/backend`
+  - Move `rpc/ethereum/namespaces` -> `rpc/namespaces/ethereum`
 - (rpc) [tharsis#1068](https://github.com/evmos/ethermint/pull/1068) Fix London hard-fork check logic in JSON-RPC APIs.
 
 ### Improvements
@@ -620,9 +620,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 - (server) [tharsis#434](https://github.com/evmos/ethermint/pull/434) `evm-rpc` flags and app config have been renamed to `json-rpc`.
 - (proto, evm) [tharsis#207](https://github.com/evmos/ethermint/issues/207) Replace `big.Int` in favor of `sdk.Int` for `TxData` fields
 - (proto, evm) [tharsis#81](https://github.com/evmos/ethermint/pull/81) gRPC Query and Tx service changes:
-    - The `TxReceipt`, `TxReceiptsByBlockHeight` endpoints have been removed from the Query service.
-    - The `ContractAddress`, `Bloom` have been removed from the `MsgEthereumTxResponse` and the
-      response now contains the ethereum-formatted `Hash` in hex format.
+  - The `TxReceipt`, `TxReceiptsByBlockHeight` endpoints have been removed from the Query service.
+  - The `ContractAddress`, `Bloom` have been removed from the `MsgEthereumTxResponse` and the
+    response now contains the ethereum-formatted `Hash` in hex format.
 - (eth) [tharsis#845](https://github.com/cosmos/ethermint/pull/845) The `eth` namespace must be included in the list of API's as default to run the rpc server without error.
 - (evm) [tharsis#202](https://github.com/evmos/ethermint/pull/202) Web3 api `SendTransaction`/`SendRawTransaction` returns ethereum compatible transaction hash, and query api `GetTransaction*` also accept that.
 - (rpc) [tharsis#258](https://github.com/evmos/ethermint/pull/258) Return empty `BloomFilter` instead of throwing an error when it cannot be found (`nil` or empty).
@@ -697,13 +697,13 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Features
 
 - (rpc) [tharsis#571](https://github.com/cosmos/ethermint/pull/571) Add pending queries to JSON-RPC calls. This allows for the querying of pending transactions and other relevant information that pertains to the pending state:
-    - `eth_getBalance`
-    - `eth_getTransactionCount`
-    - `eth_getBlockTransactionCountByNumber`
-    - `eth_getBlockByNumber`
-    - `eth_getTransactionByHash`
-    - `eth_getTransactionByBlockNumberAndIndex`
-    - `eth_sendTransaction` - the nonce will automatically update to its pending nonce (when none is explicitly provided)
+  - `eth_getBalance`
+  - `eth_getTransactionCount`
+  - `eth_getBlockTransactionCountByNumber`
+  - `eth_getBlockByNumber`
+  - `eth_getTransactionByHash`
+  - `eth_getTransactionByBlockNumberAndIndex`
+  - `eth_sendTransaction` - the nonce will automatically update to its pending nonce (when none is explicitly provided)
 
 ### Improvements
 
@@ -738,14 +738,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### API Breaking
 
 - (crypto) [tharsis#559](https://github.com/cosmos/ethermint/pull/559) Refactored crypto package in preparation for the SDK's Stargate release:
-    - `crypto.PubKeySecp256k1` and `crypto.PrivKeySecp256k1` are now `ethsecp256k1.PubKey` and `ethsecp256k1.PrivKey`, respectively
-    - Moved SDK `SigningAlgo` implementation for Ethermint's Secp256k1 key to `crypto/hd` package.
+  - `crypto.PubKeySecp256k1` and `crypto.PrivKeySecp256k1` are now `ethsecp256k1.PubKey` and `ethsecp256k1.PrivKey`, respectively
+  - Moved SDK `SigningAlgo` implementation for Ethermint's Secp256k1 key to `crypto/hd` package.
 - (rpc) [tharsis#588](https://github.com/cosmos/ethermint/pull/588) The `rpc` package has been refactored to account for the separation of each
   corresponding Ethereum API namespace:
-    - `rpc/namespaces/eth`: `eth` namespace. Exposes the `PublicEthereumAPI` and the `PublicFilterAPI`.
-    - `rpc/namespaces/personal`: `personal` namespace. Exposes the `PrivateAccountAPI`.
-    - `rpc/namespaces/net`: `net` namespace. Exposes the `PublicNetAPI`.
-    - `rpc/namespaces/web3`: `web3` namespace. Exposes the `PublicWeb3API`.
+  - `rpc/namespaces/eth`: `eth` namespace. Exposes the `PublicEthereumAPI` and the `PublicFilterAPI`.
+  - `rpc/namespaces/personal`: `personal` namespace. Exposes the `PrivateAccountAPI`.
+  - `rpc/namespaces/net`: `net` namespace. Exposes the `PublicNetAPI`.
+  - `rpc/namespaces/web3`: `web3` namespace. Exposes the `PublicWeb3API`.
 - (evm) [tharsis#588](https://github.com/cosmos/ethermint/pull/588) The EVM transaction CLI has been removed in favor of the JSON-RPC.
 
 ### Improvements
@@ -807,23 +807,23 @@ Ref: https://keepachangelog.com/en/1.0.0/
 - (sdk) [tharsis#386](https://github.com/cosmos/ethermint/pull/386) Bump Cosmos SDK version to [v0.39.1](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.39.1)
 - (evm) [tharsis#181](https://github.com/cosmos/ethermint/issues/181) Updated EVM module to the recommended module structure.
 - (app) [tharsis#188](https://github.com/cosmos/ethermint/issues/186) Misc cleanup:
-    - (evm) Rename `EthereumTxMsg` --> `MsgEthereumTx` and `EmintMsg` --> `MsgEthermint` for consistency with SDK standards
-    - Updated integration and unit tests to use `EthermintApp` as testing suite
-    - Use expected `Keeper` interface for `AccountKeeper`
-    - Replaced `count` type in keeper with `int`
-    - Add SDK events for transactions
+  - (evm) Rename `EthereumTxMsg` --> `MsgEthereumTx` and `EmintMsg` --> `MsgEthermint` for consistency with SDK standards
+  - Updated integration and unit tests to use `EthermintApp` as testing suite
+  - Use expected `Keeper` interface for `AccountKeeper`
+  - Replaced `count` type in keeper with `int`
+  - Add SDK events for transactions
 - [tharsis#236](https://github.com/cosmos/ethermint/pull/236) Changes from upgrade:
-    - (`app/ante`) Moved `AnteHandler` implementation to `app/ante`
-    - (keys) Marked `ExportEthKeyCommand` as **UNSAFE**
-    - (evm) Moved `BeginBlock` and `EndBlock` to `x/evm/abci.go`
+  - (`app/ante`) Moved `AnteHandler` implementation to `app/ante`
+  - (keys) Marked `ExportEthKeyCommand` as **UNSAFE**
+  - (evm) Moved `BeginBlock` and `EndBlock` to `x/evm/abci.go`
 - (evm) [tharsis#255](https://github.com/cosmos/ethermint/pull/255) Add missing `GenesisState` fields and support `ExportGenesis` functionality.
 - [tharsis#272](https://github.com/cosmos/ethermint/pull/272) Add `Logger` for evm module.
 - [tharsis#317](https://github.com/cosmos/ethermint/pull/317) `GenesisAccount` validation.
 - (evm) [tharsis#319](https://github.com/cosmos/ethermint/pull/319) Various evm improvements:
-    - Add transaction `[]*ethtypes.Logs` to evm's `GenesisState` to persist logs after an upgrade.
-    - Remove evm `CodeKey` and `BlockKey`in favor of a prefix `Store`.
-    - Set `BlockBloom` during `EndBlock` instead of `BeginBlock`.
-    - `Commit` state object and `Finalize` storage after `InitGenesis` setup.
+  - Add transaction `[]*ethtypes.Logs` to evm's `GenesisState` to persist logs after an upgrade.
+  - Remove evm `CodeKey` and `BlockKey`in favor of a prefix `Store`.
+  - Set `BlockBloom` during `EndBlock` instead of `BeginBlock`.
+  - `Commit` state object and `Finalize` storage after `InitGenesis` setup.
 - (rpc) [tharsis#325](https://github.com/cosmos/ethermint/pull/325) `eth_coinbase` JSON-RPC query now returns the node's validator address.
 
 ### Features
@@ -831,15 +831,15 @@ Ref: https://keepachangelog.com/en/1.0.0/
 - (build) [tharsis#378](https://github.com/cosmos/ethermint/pull/378) Create multi-node, local, automated testnet setup with `make localnet-start`.
 - (rpc) [tharsis#330](https://github.com/cosmos/ethermint/issues/330) Implement `PublicFilterAPI`'s `EventSystem` which subscribes to Tendermint events upon `Filter` creation.
 - (rpc) [tharsis#231](https://github.com/cosmos/ethermint/issues/231) Implement `NewBlockFilter` in rpc/filters.go which instantiates a polling block filter
-    - Polls for new blocks via `BlockNumber` rpc call; if block number changes, it requests the new block via `GetBlockByNumber` rpc call and adds it to its internal list of blocks
-    - Update `uninstallFilter` and `getFilterChanges` accordingly
-    - `uninstallFilter` stops the polling goroutine
-    - `getFilterChanges` returns the filter's internal list of block hashes and resets it
+  - Polls for new blocks via `BlockNumber` rpc call; if block number changes, it requests the new block via `GetBlockByNumber` rpc call and adds it to its internal list of blocks
+  - Update `uninstallFilter` and `getFilterChanges` accordingly
+  - `uninstallFilter` stops the polling goroutine
+  - `getFilterChanges` returns the filter's internal list of block hashes and resets it
 - (rpc) [tharsis#54](https://github.com/cosmos/ethermint/issues/54), [tharsis#55](https://github.com/cosmos/ethermint/issues/55)
   Implement `eth_getFilterLogs` and `eth_getLogs`:
-    - For a given filter, look through each block for transactions. If there are transactions in the block, get the logs from it, and filter using the filterLogs method
-    - `eth_getLogs` and `eth_getFilterChanges` for log filters use the same underlying method as `eth_getFilterLogs`
-    - update `HandleMsgEthereumTx` to store logs using the ethereum hash
+  - For a given filter, look through each block for transactions. If there are transactions in the block, get the logs from it, and filter using the filterLogs method
+  - `eth_getLogs` and `eth_getFilterChanges` for log filters use the same underlying method as `eth_getFilterLogs`
+  - update `HandleMsgEthereumTx` to store logs using the ethereum hash
 - (app) [tharsis#187](https://github.com/cosmos/ethermint/issues/187) Add support for simulations.
 
 ### Bug Fixes
@@ -852,4 +852,4 @@ Ref: https://keepachangelog.com/en/1.0.0/
 - (rpc) [tharsis#305](https://github.com/cosmos/ethermint/issues/305) Update `eth_getTransactionCount` to check for account existence before getting sequence and return 0 as the nonce if it doesn't exist.
 - (evm) [tharsis#319](https://github.com/cosmos/ethermint/pull/319) Fix `SetBlockHash` that was setting the incorrect height during `BeginBlock`.
 - (evm) [tharsis#176](https://github.com/cosmos/ethermint/issues/176) Updated Web3 transaction hash from using RLP hash. Now all transaction hashes exposed are amino hashes:
-    - Removes `Hash()` (RLP) function from `MsgEthereumTx` to avoid confusion or misuse in future.
+  - Removes `Hash()` (RLP) function from `MsgEthereumTx` to avoid confusion or misuse in future.
