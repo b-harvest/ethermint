@@ -163,8 +163,9 @@ schema = 3
     version = "v1.0.0-beta.5"
     hash = "sha256-Fy/PbsOsd6iq0Njy3DVWK6HqWsogI+MkE8QslHGWyVg="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.50.6"
-    hash = "sha256-uqj+BrNyb2P7Yf/X8SCH1RrlddK9iskyB/T0+xGKqu8="
+    version = "v0.50.6-0.20240528102815-eee3c28376e0"
+    hash = "sha256-gDAJq/hGdr6OsE5SE/fw/GGi+w9R7r2ulxO5HMZMukI="
+    replaced = "github.com/b-harvest/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -181,8 +182,8 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-xOeHJWUj6fTc2EUGiE4dgfY2WkvrqTg/FWewoUvQcvg="
   [mod."github.com/cosmos/ibc-go/v8"]
-    version = "v8.0.0"
-    hash = "sha256-RBj66/3xB8KTD9wbryv/tpRYYdKIDCJ/4u6u6s1Eeuo="
+    version = "v8.2.1"
+    hash = "sha256-FYMkZG3dYTXkqoSSyJSSe5NDd9K+3KlMWKfQKahXz3s="
   [mod."github.com/cosmos/ics23/go"]
     version = "v0.10.0"
     hash = "sha256-KYEv727BO/ht63JO02xiKFGFAddg41Ve9l2vSSZZBq0="
@@ -201,6 +202,9 @@ schema = 3
   [mod."github.com/creachadair/tomledit"]
     version = "v0.0.24"
     hash = "sha256-4vUukHONOjNn0qfQr4esK6TWfPWsIp+rbdz65og84lw="
+  [mod."github.com/crypto-org-chain/go-block-stm"]
+    version = "v0.0.0-20240408005941-8581dfb69ce4"
+    hash = "sha256-lr3tC7QEJ/Lm/SJschBTqcD2o/Ojh9s2ZtQSe1P3aoE="
   [mod."github.com/danieljoos/wincred"]
     version = "v1.2.0"
     hash = "sha256-LHcvTJCc8++bFndbd8ZgMSTe4L5h2C4rN+cSWHCz54Y="
@@ -580,8 +584,9 @@ schema = 3
     version = "v0.16.0"
     hash = "sha256-JW4zO/0vMzf1dXLePOqaMtiLUZgNbuIseh9GV+jQlf0="
   [mod."github.com/tidwall/btree"]
-    version = "v1.7.0"
-    hash = "sha256-bnr6c7a0nqo2HyGqxHk0kEZCEsjLYkPbAVY9WzaZ30o="
+    version = "v0.0.0-20240406140148-2687063b042c"
+    hash = "sha256-8eDLGHhw4qXG6MEa7w5Q9KLwOobXr8Vn5qqyQhuipQw="
+    replaced = "github.com/crypto-org-chain/btree"
   [mod."github.com/tidwall/gjson"]
     version = "v1.14.4"
     hash = "sha256-3DS2YNL95wG0qSajgRtIABD32J+oblaKVk8LIw+KSOc="
