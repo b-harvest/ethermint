@@ -40,7 +40,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
+	ibcclientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
@@ -49,7 +49,7 @@ import (
 
 func (app *EthermintApp) RegisterUpgradeHandlers(
 	cdc codec.BinaryCodec,
-	clientKeeper clientkeeper.Keeper,
+	ibcClientKeeper ibcclientkeeper.Keeper,
 	consensusParamsKeeper consensusparamskeeper.Keeper,
 	paramsKeeper paramskeeper.Keeper,
 ) {
@@ -100,20 +100,15 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 
 			// ibc v7
 			// OPTIONAL: prune expired tendermint consensus states to save storage space
-			if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, clientKeeper); err != nil {
-				return fromVM, err
-			}
-
-			legacyBaseAppSubspace := paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
-			if err := baseapp.MigrateParams(sdkCtx, legacyBaseAppSubspace, &consensusParamsKeeper.ParamsStore); err != nil {
+			if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, ibcClientKeeper); err != nil {
 				return fromVM, err
 			}
 
 			// ibc v7.1
 			// explicitly update the IBC 02-client params, adding the localhost client type
-			params := clientKeeper.GetParams(sdkCtx)
+			params := ibcClientKeeper.GetParams(sdkCtx)
 			params.AllowedClients = append(params.AllowedClients, exported.Localhost)
-			clientKeeper.SetParams(sdkCtx, params)
+			ibcClientKeeper.SetParams(sdkCtx, params)
 
 			// cosmos-sdk v047
 			// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.

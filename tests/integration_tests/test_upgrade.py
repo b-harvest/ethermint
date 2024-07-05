@@ -2,6 +2,7 @@ import configparser
 import json
 import re
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -17,7 +18,8 @@ from .utils import (
     parse_events,
     send_transaction,
     wait_for_block,
-    wait_for_block_time,
+    wait_for_new_blocks_legacy,
+    wait_for_block_time_legacy,
     wait_for_port,
 )
 
@@ -53,9 +55,9 @@ def post_init(path, base_port, config):
             i = m.group(1)
             ini[section].update(
                 {
-                    "command": f"cosmovisor start --home %(here)s/node{i}",
+                    "command": f"cosmovisor run start --home %(here)s/node{i}",
                     "environment": (
-                        f"DAEMON_NAME=ethermintd,DAEMON_HOME=%(here)s/node{i}"
+                        f"DAEMON_NAME=ethermintd,DAEMON_HOME=%(here)s/node{i},DAEMON_RESTART_AFTER_UPGRADE=false"
                     ),
                 }
             )
@@ -119,7 +121,10 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # get proposal_id
-    ev = parse_events(rsp["logs"])["submit_proposal"]
+    wait_for_new_blocks_legacy(cli, 1, sleep=0.1)
+    logs = cli.query_tx("hash", rsp["txhash"])["logs"]
+    
+    ev = parse_events(logs)["submit_proposal"]
     proposal_id = ev["proposal_id"]
 
     rsp = cli.gov_vote("validator", proposal_id, "yes")
@@ -128,7 +133,7 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
     # assert rsp["code"] == 0, rsp["raw_log"]
 
     proposal = cli.query_proposal(proposal_id)
-    wait_for_block_time(cli, isoparse(proposal["voting_end_time"]))
+    wait_for_block_time_legacy(cli, isoparse(proposal["voting_end_time"]))
     proposal = cli.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
 
@@ -137,46 +142,80 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
         Path(custom_ethermint.chain_binary).parent.parent.parent
         / f"{plan_name}/bin/ethermintd"
     )
+
+    # wait until cosmovosor finished
+    proc = []
+    for i in range(2):
+        while True:
+            try:
+                c = custom_ethermint.cosmos_cli(i)
+                c.status()
+            except:
+                break
+            finally:
+                time.sleep(5)
+
+    # start ethermint
+    for i in range(2):
+        with (custom_ethermint.base_dir / f"node{i}.log").open("a") as logfile:
+            p = subprocess.Popen(
+                [
+                    custom_ethermint.chain_binary,
+                    "start",
+                    "--home",
+                    custom_ethermint.base_dir / f"node{i}",
+                ],
+                stdout=logfile,
+                stderr=subprocess.STDOUT,
+            )
+        proc.append(p)
     cli = custom_ethermint.cosmos_cli()
 
-    # block should pass the target height
-    wait_for_block(cli, target_height + 1, timeout=480)
-    wait_for_port(ports.rpc_port(custom_ethermint.base_port(0)))
+    try:
+        # block should pass the target height
+        wait_for_block(cli, target_height + 1, timeout=20)
+        wait_for_port(ports.rpc_port(custom_ethermint.base_port(0)))
 
-    # test migrate keystore
-    cli.migrate_keystore()
+        # test migrate keystore
+        cli.migrate_keystore()
 
-    # check basic tx works after upgrade
-    wait_for_port(ports.evmrpc_port(custom_ethermint.base_port(0)))
+        # check basic tx works after upgrade
+        wait_for_port(ports.evmrpc_port(custom_ethermint.base_port(0)))
 
-    receipt = send_transaction(
-        w3,
-        {
-            "to": ADDRS["community"],
-            "value": 1000,
-            "maxFeePerGas": 1000000000000,
-            "maxPriorityFeePerGas": 10000,
-        },
-    )
-    assert receipt.status == 1
-
-    # check json-rpc query on older blocks works
-    assert old_balance == w3.eth.get_balance(
-        ADDRS["validator"], block_identifier=old_height
-    )
-    assert old_base_fee == w3.eth.get_block(old_height).baseFeePerGas
-
-    # check eth_call on older blocks works
-    assert old_erc20_balance == contract.caller(
-        block_identifier=target_height - 2
-    ).balanceOf(ADDRS["validator"])
-    p = json.loads(
-        cli.raw(
-            "query",
-            "ibc",
-            "client",
-            "params",
-            home=cli.data_dir,
+        receipt = send_transaction(
+            w3,
+            {
+                "to": ADDRS["community"],
+                "value": 1000,
+                "maxFeePerGas": 1000000000000,
+                "maxPriorityFeePerGas": 10000,
+            },
         )
-    )
-    assert p == {"allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]}
+        assert receipt.status == 1
+
+        # check json-rpc query on older blocks works
+        assert old_balance == w3.eth.get_balance(
+            ADDRS["validator"], block_identifier=old_height
+        )
+        assert old_base_fee == w3.eth.get_block(old_height).baseFeePerGas
+
+        # check eth_call on older blocks works
+        assert old_erc20_balance == contract.caller(
+            block_identifier=target_height - 2
+        ).balanceOf(ADDRS["validator"])
+        p = json.loads(
+            cli.raw(
+                "query",
+                "ibc",
+                "client",
+                "params",
+                home=cli.data_dir,
+                node=cli.node_rpc,
+                output="json",
+            )
+        )
+        assert p == {"allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]}
+    finally:
+        for p in proc:
+            p.terminate()
+            p.wait()

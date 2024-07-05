@@ -83,6 +83,14 @@ def wait_for_new_blocks(cli, n, sleep=0.5):
     return cur_height
 
 
+def wait_for_new_blocks_legacy(cli, n, sleep=0.5):
+    cur_height = begin_height = int((cli.status())["SyncInfo"]["latest_block_height"])
+    while cur_height - begin_height < n:
+        time.sleep(sleep)
+        cur_height = int((cli.status())["SyncInfo"]["latest_block_height"])
+    return cur_height
+
+
 def wait_for_block(cli, height, timeout=240):
     for _ in range(timeout * 2):
         try:
@@ -118,6 +126,16 @@ def wait_for_block_time(cli, t):
     print("wait for block time", t)
     while True:
         now = isoparse((cli.status())["sync_info"]["latest_block_time"])
+        print("block time now: ", now)
+        if now >= t:
+            break
+        time.sleep(0.5)
+
+
+def wait_for_block_time_legacy(cli, t):
+    print("wait for block time", t)
+    while True:
+        now = isoparse((cli.status())["SyncInfo"]["latest_block_time"])
         print("block time now: ", now)
         if now >= t:
             break

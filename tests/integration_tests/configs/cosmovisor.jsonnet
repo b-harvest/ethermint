@@ -6,6 +6,12 @@ config {
       'minimum-gas-prices': '100000000000aphoton',
     },
     genesis+: {
+      consensus_params+: {
+        block+: {
+          bax_bytes: '1048576',
+          max_gas: '81500000',
+        },
+      },
       app_state+: {
         feemarket+: {
           params+: {
