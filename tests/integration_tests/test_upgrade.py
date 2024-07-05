@@ -18,8 +18,8 @@ from .utils import (
     parse_events,
     send_transaction,
     wait_for_block,
-    wait_for_new_blocks_legacy,
     wait_for_block_time_legacy,
+    wait_for_new_blocks_legacy,
     wait_for_port,
 )
 
@@ -57,7 +57,9 @@ def post_init(path, base_port, config):
                 {
                     "command": f"cosmovisor run start --home %(here)s/node{i}",
                     "environment": (
-                        f"DAEMON_NAME=ethermintd,DAEMON_HOME=%(here)s/node{i},DAEMON_RESTART_AFTER_UPGRADE=false"
+                        f"DAEMON_NAME=ethermintd,"
+                        f"DAEMON_HOME=%(here)s/node{i},"
+                        "DAEMON_RESTART_AFTER_UPGRADE=false"
                     ),
                 }
             )
@@ -123,7 +125,7 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
     # get proposal_id
     wait_for_new_blocks_legacy(cli, 1, sleep=0.1)
     logs = cli.query_tx("hash", rsp["txhash"])["logs"]
-    
+
     ev = parse_events(logs)["submit_proposal"]
     proposal_id = ev["proposal_id"]
 
@@ -150,7 +152,7 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
             try:
                 c = custom_ethermint.cosmos_cli(i)
                 c.status()
-            except:
+            except Exception:
                 break
             finally:
                 time.sleep(5)
@@ -214,7 +216,13 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
                 output="json",
             )
         )
-        assert p == {"allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]}
+        assert p == {
+            "allowed_clients": [
+                "06-solomachine",
+                "07-tendermint",
+                "09-localhost"
+            ]
+        }
     finally:
         for p in proc:
             p.terminate()
