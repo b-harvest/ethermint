@@ -35,7 +35,6 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -51,7 +50,6 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 	cdc codec.BinaryCodec,
 	ibcClientKeeper ibcclientkeeper.Keeper,
 	consensusParamsKeeper consensusparamskeeper.Keeper,
-	paramsKeeper paramskeeper.Keeper,
 ) {
 	planName := "integration-test-upgrade"
 	// Set param key table for params module migration
