@@ -226,7 +226,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 	cmd.Flags().Uint32(server.FlagStateSyncSnapshotKeepRecent, 2, "State sync snapshot to keep")
 
 	// support old flags name for backwards compatibility
-	cmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	cmd.Flags().SetNormalizeFunc(func(_ *pflag.FlagSet, name string) pflag.NormalizedName {
 		if name == "with-tendermint" {
 			name = srvflags.WithComet
 		}
