@@ -157,7 +157,8 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
             finally:
                 time.sleep(5)
 
-    time.sleep(60) # wait graceful shutdown for ethermint node
+    # wait graceful shutdown for ethermint node
+    time.sleep(60)
 
     # start ethermint
     for i in range(2):
