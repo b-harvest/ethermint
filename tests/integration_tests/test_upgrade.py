@@ -157,6 +157,8 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
             finally:
                 time.sleep(5)
 
+    time.sleep(60) # wait graceful shutdown for ethermint node
+
     # start ethermint
     for i in range(2):
         with (custom_ethermint.base_dir / f"node{i}.log").open("a") as logfile:
