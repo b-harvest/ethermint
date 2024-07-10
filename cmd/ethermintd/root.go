@@ -136,7 +136,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	initRootCmd(tempApp, encodingConfig, rootCmd, encodingConfig.TxConfig, tempApp.BasicModuleManager)
 
 	autoCliOpts := tempApp.AutoCliOpts()
-	initClientCtx, _ = config.ReadFromClientConfig(initClientCtx)
+	initClientCtx, _ = config.ReadDefaultValuesFromDefaultClientConfig(initClientCtx)
 	autoCliOpts.Keyring, _ = keyring.NewAutoCLIKeyring(initClientCtx.Keyring)
 	autoCliOpts.ClientCtx = initClientCtx
 
