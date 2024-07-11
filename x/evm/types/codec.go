@@ -35,11 +35,6 @@ var (
 	AminoCdc = codec.NewLegacyAmino()
 )
 
-const (
-	// Amino names
-	updateParamsName = "ethermint/MsgUpdateParams"
-)
-
 // NOTE: This is required for the GetSignBytes function
 func init() {
 	RegisterLegacyAminoCodec(AminoCdc)
@@ -102,5 +97,6 @@ func UnpackTxData(any *codectypes.Any) (TxData, error) {
 
 // RegisterLegacyAminoCodec required for EIP-712
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgUpdateParams{}, updateParamsName, nil)
+	cdc.RegisterConcrete(&MsgUpdateParams{}, "ethermint/x/evm/MsgUpdateParams", nil)
+	cdc.RegisterConcrete(&Params{}, "ethermint/x/evm/Params", nil)
 }
