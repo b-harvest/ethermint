@@ -9,7 +9,7 @@ import (
 	"github.com/evmos/ethermint/x/evm/keeper"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/gogo/protobuf/proto"
+	"github.com/cosmos/gogoproto/proto"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -54,7 +53,6 @@ type EvmTestSuite struct {
 	ctx     sdk.Context
 	handler baseapp.MsgServiceHandler
 	app     *app.EthermintApp
-	codec   codec.Codec
 	chainID *big.Int
 
 	signer    keyring.Signer
@@ -613,7 +611,7 @@ func (suite *EvmTestSuite) TestERC20TransferReverted() {
 			err = k.DeductTxCostsFromUserBalance(suite.ctx, fees, common.HexToAddress(tx.From))
 			suite.Require().NoError(err)
 
-			res, err := k.EthereumTx(sdk.WrapSDKContext(suite.ctx), tx)
+			res, err := k.EthereumTx(suite.ctx, tx)
 			suite.Require().NoError(err)
 
 			suite.Require().True(res.Failed())
@@ -686,7 +684,7 @@ func (suite *EvmTestSuite) TestContractDeploymentRevert() {
 			db.SetNonce(suite.from, nonce+1)
 			suite.Require().NoError(db.Commit())
 
-			rsp, err := k.EthereumTx(sdk.WrapSDKContext(suite.ctx), tx)
+			rsp, err := k.EthereumTx(suite.ctx, tx)
 			suite.Require().NoError(err)
 			suite.Require().True(rsp.Failed())
 

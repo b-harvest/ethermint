@@ -1,8 +1,6 @@
 package ante_test
 
 import (
-	"encoding/json"
-	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -11,7 +9,6 @@ import (
 	protov2 "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -39,7 +36,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	sdkante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -469,34 +465,6 @@ func (suite *AnteTestSuite) CreateTestEIP712MultipleSignerMsgs(from sdk.AccAddre
 	msgSend1 := banktypes.NewMsgSend(from, recipient, sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewInt(1))))
 	msgSend2 := banktypes.NewMsgSend(recipient, from, sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewInt(1))))
 	return suite.CreateTestEIP712CosmosTxBuilder(priv, chainId, gas, gasAmount, []sdk.Msg{msgSend1, msgSend2})
-}
-
-// StdSignBytes returns the bytes to sign for a transaction.
-func StdSignBytes(cdc *codec.LegacyAmino, chainID string, accnum uint64, sequence uint64, timeout uint64, fee legacytx.StdFee, msgs []sdk.Msg, memo string, tip *txtypes.Tip) []byte {
-	msgsBytes := make([]json.RawMessage, 0, len(msgs))
-	for _, msg := range msgs {
-		legacyMsg, ok := msg.(legacytx.LegacyMsg)
-		if !ok {
-			panic(fmt.Errorf("expected %T when using amino JSON", (*legacytx.LegacyMsg)(nil)))
-		}
-
-		msgsBytes = append(msgsBytes, json.RawMessage(legacyMsg.GetSignBytes()))
-	}
-
-	bz, err := cdc.MarshalJSON(legacytx.StdSignDoc{
-		AccountNumber: accnum,
-		ChainID:       chainID,
-		Fee:           json.RawMessage(fee.Bytes()),
-		Memo:          memo,
-		Msgs:          msgsBytes,
-		Sequence:      sequence,
-		TimeoutHeight: timeout,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	return sdk.MustSortJSON(bz)
 }
 
 func (suite *AnteTestSuite) CreateTestEIP712SingleMessageTxBuilder(
