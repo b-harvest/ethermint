@@ -94,19 +94,24 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 		func(ctx context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 			sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-			if fromVM, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM); err != nil {
-				return fromVM, err
+			var (
+				updatedVM module.VersionMap
+				err       error
+			)
+
+			if updatedVM, err = app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM); err != nil {
+				return updatedVM, err
 			}
 
 			// ibc v7
 			// OPTIONAL: prune expired tendermint consensus states to save storage space
 			if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, clientKeeper); err != nil {
-				return fromVM, err
+				return updatedVM, err
 			}
 
 			legacyBaseAppSubspace := paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
 			if err := baseapp.MigrateParams(sdkCtx, legacyBaseAppSubspace, &consensusParamsKeeper.ParamsStore); err != nil {
-				return fromVM, err
+				return updatedVM, err
 			}
 
 			// ibc v7.1
@@ -117,12 +122,12 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 
 			// cosmos-sdk v047
 			// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
-			err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, consensusParamsKeeper.ParamsStore)
+			err = baseapp.MigrateParams(sdkCtx, baseAppLegacySS, consensusParamsKeeper.ParamsStore)
 			if err != nil {
-				return fromVM, err
+				return updatedVM, err
 			}
 
-			return fromVM, err
+			return updatedVM, err
 		},
 	)
 
