@@ -4,11 +4,7 @@ import pytest
 from web3 import Web3
 
 from .network import setup_ethermint
-from .utils import (
-    ADDRS, 
-    send_transaction,
-    w3_wait_for_block,
-)
+from .utils import ADDRS, send_transaction, w3_wait_for_block
 
 
 @pytest.fixture(scope="module")
