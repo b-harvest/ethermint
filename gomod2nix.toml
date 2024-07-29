@@ -17,8 +17,8 @@ schema = 3
     version = "v1.36.0"
     hash = "sha256-dRKH1NEyAfEpVo5Mma677L7z0JO9Mfd1bv1lr1uFngI="
   [mod."cosmossdk.io/api"]
-    version = "v0.7.4"
-    hash = "sha256-cjLrTWgntp98FTlxpc6/FEfnt4cH5KZyZZkTFIbNaIk="
+    version = "v0.7.5"
+    hash = "sha256-Nuw697sJr56kU3EU7DV1eYNkyI76psznIVqYAV6RfbQ="
   [mod."cosmossdk.io/client/v2"]
     version = "v2.0.0-beta.1"
     hash = "sha256-5o3FSZ9xcYG4KLTOMbVFfPhV4CtlUn4LxjEm3/t1nOU="
@@ -63,8 +63,8 @@ schema = 3
     version = "v0.0.0-20231023160833-026631cd833c"
     hash = "sha256-alfgRKpLdGtVkHAlWAwS5QcHUzO/ZI+67eHa6zTZ6Y0="
   [mod."cosmossdk.io/x/tx"]
-    version = "v0.13.2"
-    hash = "sha256-khDxSUbrrRHwRT7WlShKDGCZHTuvpofQXvuLCKiabGw="
+    version = "v0.13.3"
+    hash = "sha256-7xN5da7GZ47oAX2zGaLcIdA5zPCn9VDLfsJWtbm3VFY="
   [mod."cosmossdk.io/x/upgrade"]
     version = "v0.1.0"
     hash = "sha256-G+7fbkBXSOsL1HFrfFDEx9LI53+xc6PLfa9kFhTx2Qo="
@@ -148,8 +148,8 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-z/0E0NiEGo7zxM7d94ImgUf8P0/KG6hbP9T4Vuym4p0="
   [mod."github.com/cometbft/cometbft"]
-    version = "v0.38.6"
-    hash = "sha256-2boDIBhWeQM7c9mAKB23cJ7bHYGf1+Dl0QeFDtO8Usk="
+    version = "v0.38.9"
+    hash = "sha256-EgSWZ8vQXekZpvUC7m5cFH3t+EO/G5CUEeOLuoh5S0k="
   [mod."github.com/cometbft/cometbft-db"]
     version = "v0.9.1"
     hash = "sha256-ftRdle5ok2aCyqT3u5rYY0jKB8WT8uDus26Pw4Mo1go="
@@ -163,8 +163,8 @@ schema = 3
     version = "v1.0.0-beta.5"
     hash = "sha256-Fy/PbsOsd6iq0Njy3DVWK6HqWsogI+MkE8QslHGWyVg="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.50.6"
-    hash = "sha256-uqj+BrNyb2P7Yf/X8SCH1RrlddK9iskyB/T0+xGKqu8="
+    version = "v0.50.8"
+    hash = "sha256-rCMvDol4uF+eZR6jmqXXbUCFjdleg9APzm54fNQCivk="
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -172,17 +172,17 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-Hd19V0RCiMoCL67NsqvWIsvWF8KM3LnuJTbYjWtQkEo="
   [mod."github.com/cosmos/gogoproto"]
-    version = "v1.4.12"
-    hash = "sha256-e2tbfaZtzLijq+EMnNG9GWKDCG4sBj8wIVnn6/R26iM="
+    version = "v1.5.0"
+    hash = "sha256-xfMjGMPy5+Nw4EhmiveFSSRNQXnocyUB7QGTN/ET1m0="
   [mod."github.com/cosmos/iavl"]
-    version = "v1.1.2"
-    hash = "sha256-fhh5fN1BMDxbF4PobERMQdIb9vIrxaSl0tRXas0WKmc="
+    version = "v1.1.4"
+    hash = "sha256-bBU5w5rEMvpCWSzFBIVvnMHnsy2+a+e1DPDkb4hNOwU="
   [mod."github.com/cosmos/ibc-go/modules/capability"]
     version = "v1.0.0"
     hash = "sha256-xOeHJWUj6fTc2EUGiE4dgfY2WkvrqTg/FWewoUvQcvg="
   [mod."github.com/cosmos/ibc-go/v8"]
-    version = "v8.2.1"
-    hash = "sha256-FYMkZG3dYTXkqoSSyJSSe5NDd9K+3KlMWKfQKahXz3s="
+    version = "v8.3.2"
+    hash = "sha256-uqt1GlZ1sQ7k5b3vGiRxawGp53yeAv0RjOotOIY7Z0E="
   [mod."github.com/cosmos/ics23/go"]
     version = "v0.10.0"
     hash = "sha256-KYEv727BO/ht63JO02xiKFGFAddg41Ve9l2vSSZZBq0="
@@ -358,8 +358,8 @@ schema = 3
     version = "v0.5.2"
     hash = "sha256-N9GOKYo7tK6XQUFhvhImtL7PZW/mr4C4Manx/yPVvcQ="
   [mod."github.com/hashicorp/go-getter"]
-    version = "v1.7.1"
-    hash = "sha256-szIdn7GPvJ78gKKzQRWlx39X81QRDsXtJKo3P/4oMIg="
+    version = "v1.7.5"
+    hash = "sha256-oXUvMoee8GT69MA0E2JHxYm1Q2q8BtmwlfxFshDKXmI="
   [mod."github.com/hashicorp/go-hclog"]
     version = "v1.5.0"
     hash = "sha256-u3Jqg7Qex11IZ7vbk4hRGgLy6e0cF70CCx7ERF0GUHo="
@@ -381,6 +381,9 @@ schema = 3
   [mod."github.com/hashicorp/golang-lru"]
     version = "v1.0.2"
     hash = "sha256-yy+5botc6T5wXgOe2mfNXJP3wr+MkVlUZ2JBkmmrA48="
+  [mod."github.com/hashicorp/golang-lru/v2"]
+    version = "v2.0.7"
+    hash = "sha256-t1bcXLgrQNOYUVyYEZ0knxcXpsTk4IuJZDjKvyJX75g="
   [mod."github.com/hashicorp/hcl"]
     version = "v1.0.0"
     hash = "sha256-xsRCmYyBfglMxeWUvTZqkaRLSW+V2FvNodEDjTGg1WA="
@@ -526,8 +529,8 @@ schema = 3
     version = "v1.12.0"
     hash = "sha256-qvDNCe3l84/LgrA8X4O15e1FeDcazyX91m9LmXGXX6M="
   [mod."github.com/rs/cors"]
-    version = "v1.10.1"
-    hash = "sha256-um4INJM5/675MLK42npIsDbSQ1/Iy5ZiUNuAFReUfeM="
+    version = "v1.11.0"
+    hash = "sha256-hF25bVehtWCQsxiOfLuL4Hv8NKVunEqLPk/Vcuheha0="
   [mod."github.com/rs/zerolog"]
     version = "v1.32.0"
     hash = "sha256-9dZjtsES+wLp1cFiSVMuEUbdeXVFcgT0dgg5ACZkILk="
