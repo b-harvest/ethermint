@@ -67,6 +67,7 @@ def test_basic(cluster):
         diff = size - min - i
         reduce = size - diff
         target = reduce if diff >= 0 else max
+        print(fee_history)
         res = fee_history["result"]
         assert len(res[field]) == target
         oldest = i + min - max
