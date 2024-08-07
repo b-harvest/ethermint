@@ -213,16 +213,16 @@ func traverseFields(
 		fieldName := jsonNameFromTag(t.Field(i).Tag)
 
 		if fieldType == cosmosAnyType {
-			any, ok := field.Interface().(*codectypes.Any)
+			anyData, ok := field.Interface().(*codectypes.Any)
 			if !ok {
 				return sdkerrors.Wrapf(sdkerrors.ErrPackAny, "%T", field.Interface())
 			}
 
 			anyWrapper := &cosmosAnyWrapper{
-				Type: any.TypeUrl,
+				Type: anyData.TypeUrl,
 			}
 
-			if err := cdc.UnpackAny(any, &anyWrapper.Value); err != nil {
+			if err := cdc.UnpackAny(anyData, &anyWrapper.Value); err != nil {
 				return sdkerrors.Wrap(err, "failed to unpack Any in msg struct")
 			}
 
@@ -323,7 +323,6 @@ func traverseFields(
 		}
 
 		if fieldType.Kind() == reflect.Struct {
-
 			var fieldTypedef string
 
 			if isCollection {
