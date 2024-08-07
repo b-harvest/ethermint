@@ -179,6 +179,8 @@ which accepts a path for the resulting pprof file.
 	cmd.Flags().Uint64(server.FlagStateSyncSnapshotInterval, 0, "State sync snapshot interval")
 	cmd.Flags().Uint32(server.FlagStateSyncSnapshotKeepRecent, 2, "State sync snapshot to keep")
 
+	cmd.Flags().Bool(server.FlagDisableIAVLFastNode, true, "Disable fast node for IAVL tree")
+
 	// add support for all Tendermint-specific command line options
 	tcmd.AddNodeFlags(cmd)
 	return cmd
@@ -331,10 +333,16 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 	// service if API or gRPC or JSONRPC is enabled, and avoid doing so in the general
 	// case, because it spawns a new local tendermint RPC client.
 	if config.API.Enable || config.GRPC.Enable || config.JSONRPC.Enable || config.JSONRPC.EnableIndexer {
+		// re-assign for making the client available below
+		// do not use := to avoid shadowing clientCtx
 		clientCtx = clientCtx.WithClient(local.New(tmNode))
 
 		app.RegisterTxService(clientCtx)
 		app.RegisterTendermintService(clientCtx)
+
+		if a, ok := app.(types.ApplicationQueryService); ok {
+			a.RegisterNodeService(clientCtx)
+		}
 	}
 
 	var idxer ethermint.EVMTxIndexer
