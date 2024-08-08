@@ -1,8 +1,8 @@
 import json
 import os
 import socket
-import time
 import sys
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
