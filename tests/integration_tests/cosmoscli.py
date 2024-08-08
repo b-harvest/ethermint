@@ -5,6 +5,8 @@ import requests
 from dateutil.parser import isoparse
 from pystarport.utils import build_cli_args_safe, interact
 
+from .utils import get_sync_info
+
 DEFAULT_GAS_PRICE = "5000000000000aphoton"
 DEFAULT_GAS = "250000"
 
@@ -130,10 +132,10 @@ class CosmosCLI:
         return json.loads(self.raw("status", node=self.node_rpc))
 
     def block_height(self):
-        return int(self.status()["sync_info"]["latest_block_height"])
+        return int(get_sync_info(self.status())["latest_block_height"])
 
     def block_time(self):
-        return isoparse(self.status()["sync_info"]["latest_block_time"])
+        return isoparse(get_sync_info(self.status())["latest_block_time"])
 
     def balances(self, addr):
         return json.loads(

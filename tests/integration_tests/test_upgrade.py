@@ -18,6 +18,7 @@ from .utils import (
     send_transaction,
     wait_for_block,
     wait_for_block_time,
+    wait_for_new_blocks,
     wait_for_port,
 )
 
@@ -121,6 +122,8 @@ def test_cosmovisor_upgrade(custom_ethermint: Ethermint):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # get proposal_id
+    wait_for_new_blocks(cli, 1, sleep=0.1)
+    rsp = cli.query_tx("hash", rsp["txhash"])
     ev = parse_events(rsp["logs"])["submit_proposal"]
     proposal_id = ev["proposal_id"]
 

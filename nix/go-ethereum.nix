@@ -41,7 +41,6 @@ in buildGoModule rec {
     "cmd/faucet"
     "cmd/geth"
     "cmd/p2psim"
-    "cmd/puppeth"
     "cmd/rlpdump"
     "cmd/utils"
   ];

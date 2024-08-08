@@ -1,26 +1,26 @@
 {
     "cosmos-sdk": {
-        "branch": "v0.50.1",
+        "branch": "v0.45.9",
         "description": ":chains: A Framework for Building High Value Public Blockchains :sparkles:",
         "homepage": "https://cosmos.network/",
         "owner": "cosmos",
         "repo": "cosmos-sdk",
-        "rev": "9814f684b9dd7e384064ca86876688c05e685e54",
-        "sha256": "0l0jnyjxq6gdy49gypspzz64s6gk91a25zs1vj761czbz3w78kdh",
+        "rev": "2582f0aab7b2cbf66ade066fe570a4622cf0b098",
+        "sha256": "0700lwpgdpwf8q71cdy4kry4i9qrhbgflh0fkj03dcxyy5m810qm",
         "type": "tarball",
-        "url": "https://github.com/cosmos/cosmos-sdk/archive/9814f684b9dd7e384064ca86876688c05e685e54.tar.gz",
+        "url": "https://github.com/cosmos/cosmos-sdk/archive/2582f0aab7b2cbf66ade066fe570a4622cf0b098.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "gomod2nix": {
         "branch": "master",
         "description": "Convert applications using Go modules to Nix expressions",
         "homepage": null,
-        "owner": "tweag",
+        "owner": "nix-community",
         "repo": "gomod2nix",
-        "rev": "001bbfa22e2adeb87c34c6015e5694e88721cabe",
-        "sha256": "1nnfw9366az79skmfqfmxv3789wqgf2xmi9k734qjplnhb28r458",
+        "rev": "30e3c3a9ec4ac8453282ca7f67fca9e1da12c3e6",
+        "sha256": "1m0q0p1xidsp61xfrbj8ld1dqk3fhyrfifxj2ks36yjbnzmi1x69",
         "type": "tarball",
-        "url": "https://github.com/tweag/gomod2nix/archive/001bbfa22e2adeb87c34c6015e5694e88721cabe.tar.gz",
+        "url": "https://github.com/nix-community/gomod2nix/archive/30e3c3a9ec4ac8453282ca7f67fca9e1da12c3e6.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
@@ -29,22 +29,22 @@
         "homepage": "https://github.com/nmattia/niv",
         "owner": "nmattia",
         "repo": "niv",
-        "rev": "6bd7cd686220bf3db0e212481faf9578e8c8ff0f",
-        "sha256": "15claxlj6y15db67qc7kb4vzyn6sv7r13z4q502vq7a4z2488z94",
+        "rev": "e0ca65c81a2d7a4d82a189f1e23a48d59ad42070",
+        "sha256": "1pq9nh1d8nn3xvbdny8fafzw87mj7gsmp6pxkdl65w2g18rmcmzx",
         "type": "tarball",
-        "url": "https://github.com/nmattia/niv/archive/6bd7cd686220bf3db0e212481faf9578e8c8ff0f.tar.gz",
+        "url": "https://github.com/nmattia/niv/archive/e0ca65c81a2d7a4d82a189f1e23a48d59ad42070.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
-        "branch": "master",
+        "branch": "nixpkgs-unstable",
         "description": "Nix Packages collection",
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f63903a90faf6cce169eb2bcc93fb45c457b1d31",
-        "sha256": "14is4h0wxq8is80vcjiakl4zn5zkb8w9wd7my30r1qf660smfii7",
+        "rev": "86ef6bd96b6279e1a4a53236d341f5df1ede3803",
+        "sha256": "0mmgk3bg8rqs4mlsaxr5hyvzqn3sg53pqqm1aiwq00kmcnhds7nx",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/f63903a90faf6cce169eb2bcc93fb45c457b1d31.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/86ef6bd96b6279e1a4a53236d341f5df1ede3803.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "poetry2nix": {
@@ -53,10 +53,22 @@
         "homepage": "",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "dded87ea03726eab238267b92fe5723f808722cc",
-        "sha256": "1hbrmzmd5my2ygkpppji9gl8dl7hag9zldgp9xvhrf2qzy6y76i5",
+        "rev": "4eb2ac54029af42a001c9901194e9ce19cbd8a40",
+        "sha256": "16fi71fpywiqsya1z99kkb14dansyrmkkrb2clzs3b5qqx673wf4",
         "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/dded87ea03726eab238267b92fe5723f808722cc.tar.gz",
+        "url": "https://github.com/nix-community/poetry2nix/archive/4eb2ac54029af42a001c9901194e9ce19cbd8a40.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "flake-compat": {
+        "branch": "master",
+        "description": null,
+        "homepage": null,
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "rev": "b4a34015c698c7793d592d66adbab377907a2be8",
+        "sha256": "1qc703yg0babixi6wshn5wm2kgl5y1drcswgszh4xxzbrwkk9sv7",
+        "type": "tarball",
+        "url": "https://github.com/edolstra/flake-compat/archive/b4a34015c698c7793d592d66adbab377907a2be8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
