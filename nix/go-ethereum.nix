@@ -16,10 +16,10 @@ buildGoModule rec {
     owner = "ethereum";
     repo = pname;
     rev = "v${version}";
-    sha256 = "0kk0iq3iqg9q1n699vfdki2sh06aag7p3h33j5cydplshc9nxj3w";
+    sha256 = "sha256-fMhuE4Oa3uZZkWPAcc9TygCoRZzN7ZSMDTg9HAeOYE4=";
   };
 
-  vendorHash = "sha256-fMhuE4Oa3uZZkWPAcc9TygCoRZzN7ZSMDTg9HAeOYE4=";
+  vendorHash = "sha256-yOR/XLY54R2w5Dz/xDZ9mDzvYOobUxuxu355jqVPm2k=";
 
   doCheck = false;
 
