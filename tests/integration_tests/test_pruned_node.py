@@ -77,10 +77,7 @@ def test_pruned_node(pruned):
         "eth_getBalance", [ADDRS["validator"], hex(tx_receipt.blockNumber)]
     )
     assert "error" in pruned_res
-    assert (
-        "Version has either been pruned, or is for a future block height" in
-        pruned_res["error"]["message"]
-    )
+    assert "version mismatch on immutable IAVL tree" in pruned_res["error"]["message"]
 
     with pytest.raises(Exception):
         erc20.caller(block_identifier=tx_receipt.blockNumber).balanceOf(
@@ -105,7 +102,7 @@ def test_pruned_node(pruned):
         {
             "from": "0x57f96e6B86CdeFdB3d412547816a82E3E0EbF9D2",
             "gas": 51406,
-            "input": (
+            "input": HexBytes(
                 "0xa9059cbb000000000000000000000000378c50d9264c63f3f92b806d4ee56e"
                 "9d86ffb3ec000000000000000000000000000000000000000000000000000000"
                 "000000000a"
