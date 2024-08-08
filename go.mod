@@ -2,8 +2,6 @@ module github.com/evmos/ethermint
 
 go 1.21
 
-toolchain go1.22.1
-
 require (
 	cosmossdk.io/math v1.0.0-beta.4
 	github.com/armon/go-metrics v0.4.1
