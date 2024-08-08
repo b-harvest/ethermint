@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "tweag",
         "repo": "gomod2nix",
-        "rev": "40d32f82fc60d66402eb0972e6e368aeab3faf58",
-        "sha256": "0li17ynbg2wg0xqy655m5rmcw905sbv7d4ir35z7s5pg1yhhzxkp",
+        "rev": "4e08ca09253ef996bd4c03afa383b23e35fe28a1",
+        "sha256": "0w2a48llggvyxbzq43xjq35cp1f2v9qwxxgsnxzz1nlhpvqw1dmi",
         "type": "tarball",
-        "url": "https://github.com/tweag/gomod2nix/archive/40d32f82fc60d66402eb0972e6e368aeab3faf58.tar.gz",
+        "url": "https://github.com/tweag/gomod2nix/archive/4e08ca09253ef996bd4c03afa383b23e35fe28a1.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
@@ -36,15 +36,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
-        "branch": "master",
+        "branch": "nixpkgs-unstable",
         "description": "Nix Packages collection",
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f904e3562aabca382d12f8471ca2330b3f82899a",
-        "sha256": "1lsa3sjwp1v3nv2jjpkl5lf9dncplwihmavasalg9fq1217pmzmb",
+        "rev": "f5129fb42b9c262318130a97b47516946da3e7d7",
+        "sha256": "1pasj6b8zbyng4i641rzvnzwab5lklrj3yps26vw0yfd4sdk3y9v",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/f904e3562aabca382d12f8471ca2330b3f82899a.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/f5129fb42b9c262318130a97b47516946da3e7d7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
