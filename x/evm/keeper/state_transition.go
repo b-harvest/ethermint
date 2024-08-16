@@ -11,7 +11,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/evmos/ethermint/contracts"
 	ethermint "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm/statedb"
 	"github.com/evmos/ethermint/x/evm/types"
@@ -390,10 +389,19 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context, msg core.Message, trace
 		stateDB.PrepareAccessList(msg.From(), msg.To(), vm.ActivePrecompiles(rules), msg.AccessList())
 	}
 
-	abi := contracts.ERC20BurnableContract.ABI
-	unpacked, err := abi.Unpack("balanceOf", msg.Data())
-	if err != nil && len(unpacked) != 0 {
-		panic(unpacked)
+	data := msg.Data()
+	if contractCreation {
+
+	} else if msg.To().Hex() == "0xAf3CD61607000389eE592d1CD138A27F043AF7F2" {
+		transferSig := crypto.Keccak256Hash([]byte("transfer(address,uint256)")).Hex()[2:10] // "a9059cbb"
+		if len(data) >= 4 && common.Bytes2Hex(data[:4]) == transferSig {
+			fromAddr := sdk.AccAddress(msg.From().Bytes())
+			toAddr := sdk.AccAddress(common.BytesToAddress(data[4:36]).Bytes())
+			amount := sdk.NewIntFromBigInt(new(big.Int).SetBytes(data[36:68]))
+			if err = k.bankKeeper.SendCoins(ctx, fromAddr, toAddr, sdk.NewCoins(sdk.NewCoin("TTTT", amount))); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	if contractCreation {
