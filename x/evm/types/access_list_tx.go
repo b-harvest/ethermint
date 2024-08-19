@@ -233,11 +233,11 @@ func (tx AccessListTx) Cost() *big.Int {
 }
 
 // EffectiveFee is the same as Fee for AccessListTx
-func (tx AccessListTx) EffectiveFee(baseFee *big.Int) *big.Int {
+func (tx AccessListTx) EffectiveFee(_ *big.Int) *big.Int {
 	return tx.Fee()
 }
 
 // EffectiveCost is the same as Cost for AccessListTx
-func (tx AccessListTx) EffectiveCost(baseFee *big.Int) *big.Int {
+func (tx AccessListTx) EffectiveCost(_ *big.Int) *big.Int {
 	return tx.Cost()
 }

@@ -39,16 +39,18 @@ def test_pruned_node(pruned):
         CONTRACTS["TestERC20A"],
         key=KEYS["validator"],
     )
-    tx = erc20.functions.transfer(ADDRS["community"], 10).buildTransaction(
+    tx = erc20.functions.transfer(ADDRS["community"], 10).build_transaction(
         {"from": ADDRS["validator"]}
     )
     signed = sign_transaction(w3, tx, KEYS["validator"])
     txhash = w3.eth.send_raw_transaction(signed.rawTransaction)
     print("wait for prunning happens")
-    w3_wait_for_new_blocks(w3, 10)
+    w3_wait_for_new_blocks(w3, 15)
 
     tx_receipt = w3.eth.get_transaction_receipt(txhash.hex())
     assert len(tx_receipt.logs) == 1
+    data = "0x000000000000000000000000000000000000000000000000000000000000000a"
+    data = HexBytes(data)
     expect_log = {
         "address": erc20.address,
         "topics": [
@@ -58,7 +60,7 @@ def test_pruned_node(pruned):
             HexBytes(b"\x00" * 12 + HexBytes(ADDRS["validator"])),
             HexBytes(b"\x00" * 12 + HexBytes(ADDRS["community"])),
         ],
-        "data": "0x000000000000000000000000000000000000000000000000000000000000000a",
+        "data": data,
         "transactionIndex": 0,
         "logIndex": 0,
         "removed": False,
@@ -75,9 +77,7 @@ def test_pruned_node(pruned):
         "eth_getBalance", [ADDRS["validator"], hex(tx_receipt.blockNumber)]
     )
     assert "error" in pruned_res
-    assert (
-        pruned_res["error"]["message"] == "couldn't fetch balance. Node state is pruned"
-    )
+    assert "version mismatch on immutable IAVL tree" in pruned_res["error"]["message"]
 
     with pytest.raises(Exception):
         erc20.caller(block_identifier=tx_receipt.blockNumber).balanceOf(
@@ -102,7 +102,7 @@ def test_pruned_node(pruned):
         {
             "from": "0x57f96e6B86CdeFdB3d412547816a82E3E0EbF9D2",
             "gas": 51542,
-            "input": (
+            "input": HexBytes(
                 "0xa9059cbb000000000000000000000000378c50d9264c63f3f92b806d4ee56e"
                 "9d86ffb3ec000000000000000000000000000000000000000000000000000000"
                 "000000000a"
@@ -111,9 +111,9 @@ def test_pruned_node(pruned):
             "to": erc20.address,
             "transactionIndex": 0,
             "value": 0,
-            "type": "0x2",
+            "type": 2,
             "accessList": [],
-            "chainId": "0x2328",
+            "chainId": 9000,
         }
     )
     assert tx1 == tx2

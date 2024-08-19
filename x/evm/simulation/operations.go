@@ -92,9 +92,9 @@ func WeightedOperations(
 // SimulateEthSimpleTransfer simulate simple eth account transferring gas token.
 // It randomly choose sender, recipient and transferable amount.
 // Other tx details like nonce, gasprice, gaslimit are calculated to get valid value.
-func SimulateEthSimpleTransfer(ak types.AccountKeeper, k *keeper.Keeper) simtypes.Operation {
+func SimulateEthSimpleTransfer(_ types.AccountKeeper, k *keeper.Keeper) simtypes.Operation {
 	return func(
-		r *rand.Rand, bapp *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+		r *rand.Rand, bapp *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, _ string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 		var recipient simtypes.Account
@@ -114,9 +114,9 @@ func SimulateEthSimpleTransfer(ak types.AccountKeeper, k *keeper.Keeper) simtype
 
 // SimulateEthCreateContract simulate create an ERC20 contract.
 // It makes operationSimulateEthCallContract the future operations of SimulateEthCreateContract to ensure valid contract call.
-func SimulateEthCreateContract(ak types.AccountKeeper, k *keeper.Keeper) simtypes.Operation {
+func SimulateEthCreateContract(_ types.AccountKeeper, k *keeper.Keeper) simtypes.Operation {
 	return func(
-		r *rand.Rand, bapp *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+		r *rand.Rand, bapp *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, _ string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 
@@ -154,7 +154,7 @@ func SimulateEthCreateContract(ak types.AccountKeeper, k *keeper.Keeper) simtype
 // It is always calling an ERC20 contract.
 func operationSimulateEthCallContract(k *keeper.Keeper, contractAddr, to *common.Address, amount *big.Int) simtypes.Operation {
 	return func(
-		r *rand.Rand, bapp *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+		r *rand.Rand, bapp *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, _ string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 
@@ -175,7 +175,7 @@ func operationSimulateEthCallContract(k *keeper.Keeper, contractAddr, to *common
 
 // SimulateEthTx creates valid ethereum tx and pack it as cosmos tx, and deliver it.
 func SimulateEthTx(
-	ctx *simulateContext, from, to *common.Address, amount *big.Int, data *hexutil.Bytes, prv cryptotypes.PrivKey, fops []simtypes.FutureOperation,
+	ctx *simulateContext, from, _ *common.Address, _ *big.Int, data *hexutil.Bytes, prv cryptotypes.PrivKey, fops []simtypes.FutureOperation,
 ) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 	ethTx, err := CreateRandomValidEthTx(ctx, from, nil, nil, data)
 	if err == ErrNoEnoughBalance {
@@ -201,7 +201,12 @@ func SimulateEthTx(
 }
 
 // CreateRandomValidEthTx create the ethereum tx with valid random values
-func CreateRandomValidEthTx(ctx *simulateContext, from, to *common.Address, amount *big.Int, data *hexutil.Bytes) (ethTx *types.MsgEthereumTx, err error) {
+func CreateRandomValidEthTx(ctx *simulateContext,
+	from,
+	to *common.Address,
+	amount *big.Int,
+	data *hexutil.Bytes,
+) (ethTx *types.MsgEthereumTx, err error) {
 	gasCap := ctx.rand.Uint64()
 	estimateGas, err := EstimateGas(ctx, from, to, data, gasCap)
 	if err != nil {
@@ -267,7 +272,11 @@ func RandomTransferableAmount(ctx *simulateContext, address common.Address, esti
 }
 
 // GetSignedTx sign the ethereum tx and packs it as a signing.Tx .
-func GetSignedTx(ctx *simulateContext, txBuilder client.TxBuilder, msg *types.MsgEthereumTx, prv cryptotypes.PrivKey) (signedTx signing.Tx, err error) {
+func GetSignedTx(ctx *simulateContext,
+	txBuilder client.TxBuilder,
+	msg *types.MsgEthereumTx,
+	prv cryptotypes.PrivKey,
+) (signedTx signing.Tx, err error) {
 	builder, ok := txBuilder.(tx.ExtensionOptionsTxBuilder)
 	if !ok {
 		return nil, fmt.Errorf("can not initiate ExtensionOptionsTxBuilder")

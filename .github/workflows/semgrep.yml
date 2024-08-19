@@ -18,9 +18,11 @@ jobs:
       image: returntocorp/semgrep
     if: (github.actor != 'dependabot[bot]')
     steps:
+      - name: Permission issue fix
+        run: git config --global --add safe.directory /__w/ethermint/ethermint
       - uses: actions/checkout@v3
       - name: Get Diff
-        uses: technote-space/get-diff-action@v6.1.0
+        uses: technote-space/get-diff-action@v6.1.2
         with:
           PATTERNS: |
             **/*.go
@@ -30,7 +32,7 @@ jobs:
             go.mod
             go.sum
       - uses: actions/checkout@v3
-      - run: semgrep scan --sarif --output=semgrep.sarif
+      - run: semgrep scan --sarif --output=semgrep.sarif --config auto
         env:
           # Upload findings to GitHub Advanced Security Dashboard [step 1/2]
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}

@@ -48,18 +48,18 @@ def test_event_log_filter_by_contract(cluster):
 
     # Create new filter from contract
     current_height = hex(w3.eth.get_block_number())
-    flt = contract.events.ChangeGreeting.createFilter(fromBlock=current_height)
+    flt = contract.events.ChangeGreeting.create_filter(fromBlock=current_height)
 
     # without tx
     assert flt.get_new_entries() == []  # GetFilterChanges
     assert flt.get_all_entries() == []  # GetFilterLogs
 
     # with tx
-    tx = contract.functions.setGreeting("world").buildTransaction()
+    tx = contract.functions.setGreeting("world").build_transaction()
     tx_receipt = send_transaction(w3, tx)
     assert tx_receipt.status == 1
 
-    log = contract.events.ChangeGreeting().processReceipt(tx_receipt)[0]
+    log = contract.events.ChangeGreeting().process_receipt(tx_receipt)[0]
     assert log["event"] == "ChangeGreeting"
 
     new_entries = flt.get_new_entries()
@@ -92,7 +92,7 @@ def test_event_log_filter_by_address(cluster):
     assert flt.get_all_entries() == []  # GetFilterLogs
 
     # with tx
-    tx = contract.functions.setGreeting("world").buildTransaction()
+    tx = contract.functions.setGreeting("world").build_transaction()
     receipt = send_transaction(w3, tx)
     assert receipt.status == 1
 
@@ -110,7 +110,7 @@ def test_get_logs(cluster):
     assert w3.eth.get_logs({"address": ADDRS["validator"]}) == []
 
     # with tx
-    tx = contract.functions.setGreeting("world").buildTransaction()
+    tx = contract.functions.setGreeting("world").build_transaction()
     receipt = send_transaction(w3, tx)
     assert receipt.status == 1
 
