@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -13,6 +14,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 
 	ethermint "github.com/evmos/ethermint/types"
@@ -60,10 +62,7 @@ type Keeper struct {
 	hooks types.EvmHooks
 
 	// Legacy subspace
-	ss                paramstypes.Subspace
 	customContractFns []CustomContractFn
-
-	ck consensusparamkeeper.Keeper
 
 	// a set of store keys that should cover all the precompile use cases,
 	// or ideally just pass the application's all stores.
@@ -77,9 +76,7 @@ func NewKeeper(
 	ak types.AccountKeeper, bankKeeper types.BankKeeper, sk types.StakingKeeper,
 	fmk types.FeeMarketKeeper,
 	tracer string,
-	ss paramstypes.Subspace,
 	customContractFns []CustomContractFn,
-	ck consensusparamkeeper.Keeper,
 	keys map[string]storetypes.StoreKey,
 ) *Keeper {
 	// ensure evm module account is set
@@ -95,7 +92,7 @@ func NewKeeper(
 	// NOTE: we pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	return &Keeper{
 		cdc:               cdc,
-		authority:         authority,
+		paramSpace:        paramSpace,
 		accountKeeper:     ak,
 		bankKeeper:        bankKeeper,
 		stakingKeeper:     sk,
@@ -103,9 +100,7 @@ func NewKeeper(
 		storeKey:          storeKey,
 		transientKey:      transientKey,
 		tracer:            tracer,
-		ss:                ss,
 		customContractFns: customContractFns,
-		ck:                ck,
 		keys:              keys,
 	}
 }

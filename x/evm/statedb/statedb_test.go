@@ -5,21 +5,17 @@ import (
 	"math/big"
 	"testing"
 
-	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
-	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	"github.com/tendermint/tendermint/libs/log"
+	dbm "github.com/tendermint/tm-db"
 
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -27,9 +23,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	evmenc "github.com/evmos/ethermint/encoding"
 
 	"github.com/evmos/ethermint/app"
-	"github.com/evmos/ethermint/encoding"
 	ethermint "github.com/evmos/ethermint/types"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	"github.com/evmos/ethermint/x/evm/statedb"
@@ -389,7 +387,7 @@ func (suite *StateDBTestSuite) TestRevertSnapshot() {
 			tc.malleate(db)
 			db.RevertToSnapshot(rev)
 
-			// check empty states after revert
+			// check empty states after Revert
 			suite.Require().Zero(db.GetRefund())
 			suite.Require().Empty(db.Logs())
 
@@ -432,6 +430,7 @@ func (suite *StateDBTestSuite) TestInvalidSnapshotId() {
 	})
 }
 
+// TODO: need to fix suite.go:87: test panicked: the EVM module account has not been set
 func (suite *StateDBTestSuite) TestAccessList() {
 	value1 := common.BigToHash(big.NewInt(1))
 	value2 := common.BigToHash(big.NewInt(2))
@@ -791,25 +790,23 @@ func cloneRawState(t *testing.T, cms sdk.MultiStore) map[string]map[string][]byt
 }
 
 func newTestKeeper(t *testing.T, cms sdk.MultiStore) (sdk.Context, *evmkeeper.Keeper) {
-	appCodec := encoding.MakeConfig(app.ModuleBasics).Codec
-	authAddr := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+	encodingConfig := evmenc.MakeConfig(app.ModuleBasics)
+	appCodec := encodingConfig.Marshaler
+	cdc := encodingConfig.Amino
+
+	paramsKeeper := app.InitParamsKeeper(appCodec, cdc, sdk.NewKVStoreKey(paramstypes.StoreKey), sdk.NewTransientStoreKey(paramstypes.StoreKey))
+	subSpace, find := paramsKeeper.GetSubspace(authtypes.ModuleName)
+	require.True(t, find)
+	subSpaceBank, find := paramsKeeper.GetSubspace(banktypes.ModuleName)
+	require.True(t, find)
+	subSpaceEVM, find := paramsKeeper.GetSubspace(evmtypes.ModuleName)
+	require.True(t, find)
 	accountKeeper := authkeeper.NewAccountKeeper(
-		appCodec, testStoreKeys[authtypes.StoreKey],
-		ethermint.ProtoAccount,
-		map[string][]string{
-			evmtypes.ModuleName: {authtypes.Minter, authtypes.Burner},
-		},
-		sdk.GetConfig().GetBech32AccountAddrPrefix(),
-		authAddr,
+		appCodec, sdk.NewKVStoreKey(authtypes.StoreKey), subSpace, ethermint.ProtoAccount, nil,
 	)
 	bankKeeper := bankkeeper.NewBaseKeeper(
-		appCodec,
-		testStoreKeys[banktypes.StoreKey],
-		accountKeeper,
-		map[string]bool{},
-		authAddr,
+		appCodec, sdk.NewKVStoreKey(banktypes.StoreKey), accountKeeper, subSpaceBank, nil,
 	)
-	conKeeper := consensusparamkeeper.NewKeeper(appCodec, testStoreKeys[consensusparamtypes.StoreKey], authAddr)
 
 	allKeys := make(map[string]storetypes.StoreKey, len(testStoreKeys)+len(testTransientKeys)+len(testMemKeys))
 	for k, v := range testStoreKeys {
@@ -821,11 +818,11 @@ func newTestKeeper(t *testing.T, cms sdk.MultiStore) (sdk.Context, *evmkeeper.Ke
 	for k, v := range testMemKeys {
 		allKeys[k] = v
 	}
+
 	evmKeeper := evmkeeper.NewKeeper(
-		appCodec, testStoreKeys[evmtypes.StoreKey], testTransientKeys[evmtypes.TransientKey], authtypes.NewModuleAddress(govtypes.ModuleName),
+		appCodec, testStoreKeys[evmtypes.StoreKey], testTransientKeys[evmtypes.TransientKey], subSpaceEVM,
 		accountKeeper, bankKeeper, nil, nil,
-		"",
-		paramstypes.Subspace{}, nil, conKeeper,
+		"", nil,
 		allKeys,
 	)
 
@@ -848,9 +845,9 @@ func setupTestEnv(t *testing.T) (sdk.MultiStore, sdk.Context, *evmkeeper.Keeper)
 	require.NoError(t, cms.LoadLatestVersion())
 
 	ctx, keeper := newTestKeeper(t, cms)
-	require.NoError(t, keeper.SetParams(ctx, evmtypes.Params{
+	keeper.SetParams(ctx, evmtypes.Params{
 		EvmDenom: "uphoton",
-	}))
+	})
 	return cms, ctx, keeper
 }
 

@@ -78,6 +78,7 @@ func New(ctx sdk.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 func NewWithParams(ctx sdk.Context, keeper Keeper, txConfig TxConfig, params evmtypes.Params) *StateDB {
 	db := &StateDB{
 		keeper:       keeper,
+		ctx:          ctx,
 		stateObjects: make(map[common.Address]*stateObject),
 		journal:      newJournal(),
 		accessList:   newAccessList(),
@@ -330,7 +331,7 @@ func (s *StateDB) restoreNativeState(ms sdk.MultiStore) {
 }
 
 // ExecuteNativeAction executes native action in isolate,
-// the writes will be revert when either the native action itself fail
+// the writes will be Revert when either the native action itself fail
 // or the wrapping message call reverted.
 func (s *StateDB) ExecuteNativeAction(contract common.Address, converter EventConverter, action func(ctx sdk.Context) error) error {
 	snapshot := s.cloneNativeState()
@@ -499,7 +500,7 @@ func (s *StateDB) RevertToSnapshot(revid int) {
 	snapshot := s.validRevisions[idx].journalIndex
 
 	// Replay the journal to undo changes and remove invalidated snapshots
-	s.journal.revert(s, snapshot)
+	s.journal.Revert(s, snapshot)
 	s.validRevisions = s.validRevisions[:idx]
 }
 

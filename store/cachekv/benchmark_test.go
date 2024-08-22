@@ -4,10 +4,11 @@ import (
 	fmt "fmt"
 	"testing"
 
-	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cosmos/cosmos-sdk/store/dbadapter"
-	"github.com/evmos/ethermint/store/cachekv"
 	"github.com/stretchr/testify/require"
+	dbm "github.com/tendermint/tm-db"
+
+	"github.com/evmos/ethermint/store/cachekv"
 )
 
 func DoBenchmarkDeepCacheStack(b *testing.B, depth int) {
