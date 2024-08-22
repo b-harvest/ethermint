@@ -185,6 +185,7 @@ require (
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
+	github.com/ethereum/go-ethereum => github.com/b-harvest/go-ethereum v0.0.0-20240822072248-9e1916420877
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.33
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
