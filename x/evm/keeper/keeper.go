@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -13,12 +14,18 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 
 	ethermint "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm/statedb"
 	"github.com/evmos/ethermint/x/evm/types"
 )
+
+// CustomContractFn defines a custom precompiled contract generator with rules and returns a precompiled contract.
+type CustomContractFn func(params.Rules) vm.PrecompiledContract
+
+type EventConverter = func([]abci.EventAttribute) []*ethtypes.Log
 
 // Keeper grants access to the EVM module state and implements the go-ethereum StateDB interface.
 type Keeper struct {
@@ -53,6 +60,13 @@ type Keeper struct {
 
 	// EVM Hooks for tx post-processing
 	hooks types.EvmHooks
+
+	// Legacy subspace
+	customContractFns []CustomContractFn
+
+	// a set of store keys that should cover all the precompile use cases,
+	// or ideally just pass the application's all stores.
+	keys map[string]storetypes.StoreKey
 }
 
 // NewKeeper generates new evm module keeper
@@ -62,6 +76,8 @@ func NewKeeper(
 	ak types.AccountKeeper, bankKeeper types.BankKeeper, sk types.StakingKeeper,
 	fmk types.FeeMarketKeeper,
 	tracer string,
+	customContractFns []CustomContractFn,
+	keys map[string]storetypes.StoreKey,
 ) *Keeper {
 	// ensure evm module account is set
 	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
@@ -75,16 +91,22 @@ func NewKeeper(
 
 	// NOTE: we pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	return &Keeper{
-		cdc:             cdc,
-		paramSpace:      paramSpace,
-		accountKeeper:   ak,
-		bankKeeper:      bankKeeper,
-		stakingKeeper:   sk,
-		feeMarketKeeper: fmk,
-		storeKey:        storeKey,
-		transientKey:    transientKey,
-		tracer:          tracer,
+		cdc:               cdc,
+		paramSpace:        paramSpace,
+		accountKeeper:     ak,
+		bankKeeper:        bankKeeper,
+		stakingKeeper:     sk,
+		feeMarketKeeper:   fmk,
+		storeKey:          storeKey,
+		transientKey:      transientKey,
+		tracer:            tracer,
+		customContractFns: customContractFns,
+		keys:              keys,
 	}
+}
+
+func (k Keeper) StoreKeys() map[string]storetypes.StoreKey {
+	return k.keys
 }
 
 // Logger returns a module-specific logger.

@@ -1,12 +1,19 @@
 package statedb
 
 import (
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
 // Keeper provide underlying storage of StateDB
 type Keeper interface {
+	// for cache store wrapping
+	StoreKeys() map[string]storetypes.StoreKey
+	GetParams(sdk.Context) evmtypes.Params
+
 	// Read methods
 	GetAccount(ctx sdk.Context, addr common.Address) *Account
 	GetState(ctx sdk.Context, addr common.Address, key common.Hash) common.Hash

@@ -253,9 +253,7 @@ type CanTransferDecorator struct {
 
 // NewCanTransferDecorator creates a new CanTransferDecorator instance.
 func NewCanTransferDecorator(evmKeeper EVMKeeper) CanTransferDecorator {
-	return CanTransferDecorator{
-		evmKeeper: evmKeeper,
-	}
+	return CanTransferDecorator{evmKeeper}
 }
 
 // AnteHandle creates an EVM from the message and calls the BlockContext CanTransfer function to
