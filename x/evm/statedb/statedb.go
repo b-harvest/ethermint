@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -31,6 +32,9 @@ var _ vm.StateDB = &StateDB{}
 type StateDB struct {
 	keeper Keeper
 	ctx    sdk.Context
+
+	cacheCtx   sdk.Context
+	writeCache func()
 
 	// Journal of state modifications. This is the backbone of
 	// Snapshot and RevertToSnapshot.
@@ -283,6 +287,14 @@ func (s *StateDB) setStateObject(object *stateObject) {
 	s.stateObjects[object.Address()] = object
 }
 
+func (s *StateDB) GetCacheContext() sdk.Context {
+	if s.writeCache == nil {
+		s.cacheCtx, s.writeCache = s.ctx.CacheContext()
+	}
+
+	return s.cacheCtx
+}
+
 /*
  * SETTERS
  */
@@ -436,6 +448,11 @@ func (s *StateDB) RevertToSnapshot(revid int) {
 // Commit writes the dirty states to keeper
 // the StateDB object should be discarded after committed.
 func (s *StateDB) Commit() error {
+	// write all store updates from precompile
+	if s.writeCache != nil {
+		s.writeCache()
+	}
+
 	for _, addr := range s.journal.sortedDirties() {
 		obj := s.stateObjects[addr]
 		if obj.suicided {
