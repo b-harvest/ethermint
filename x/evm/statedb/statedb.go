@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -287,12 +288,38 @@ func (s *StateDB) setStateObject(object *stateObject) {
 	s.stateObjects[object.Address()] = object
 }
 
-func (s *StateDB) GetCacheContext() sdk.Context {
+func (s *StateDB) GetCacheContext() (sdk.Context, error) {
 	if s.writeCache == nil {
+		if s.ctx.MultiStore() == nil {
+			return s.ctx, errors.New("ctx has no multi store")
+		}
 		s.cacheCtx, s.writeCache = s.ctx.CacheContext()
 	}
 
-	return s.cacheCtx
+	return s.cacheCtx, nil
+}
+
+func (s *StateDB) MultiStoreSnapshot() (sdk.CacheMultiStore, error) {
+	ctx, err := s.GetCacheContext()
+	if err != nil { // means s.ctx.MultiStore() == nil
+		return nil, err
+	}
+
+	cms := ctx.MultiStore().(sdk.CacheMultiStore)
+	snapshot := cms.Copy()
+	return snapshot, nil
+}
+
+func (s *StateDB) RevertWithMultiStoreSnapshot(snapshot sdk.MultiStore) {
+	s.cacheCtx = s.cacheCtx.
+		WithMultiStore(snapshot).
+		WithEventManager(sdk.NewEventManager())
+}
+
+// If revert is occured, the snapshot of journal is overwrited to MultiStore of ctx,
+// The events is just for debug.
+func (s *StateDB) PostPrecompileProcessing(snapshot sdk.MultiStore, events sdk.Events) {
+	s.journal.append(precompileChange{snapshot, events})
 }
 
 /*
