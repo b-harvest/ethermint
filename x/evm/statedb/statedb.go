@@ -316,7 +316,7 @@ func (s *StateDB) RevertWithMultiStoreSnapshot(snapshot sdk.MultiStore) {
 		WithEventManager(sdk.NewEventManager())
 }
 
-// If revert is occured, the snapshot of journal is overwrited to MultiStore of ctx,
+// If revert is occurred, the snapshot of journal is overwrited to MultiStore of ctx.
 // The events is just for debug.
 func (s *StateDB) PostPrecompileProcessing(snapshot sdk.MultiStore, events sdk.Events) {
 	s.journal.append(precompileChange{snapshot, events})
