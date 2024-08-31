@@ -114,7 +114,7 @@ func (b *Backend) GetTendermintBlockByNumber(blockNum rpctypes.BlockNumber) (*tm
 		if err != nil {
 			return nil, err
 		}
-		height = int64(n)
+		height = int64(n) //#nosec G115
 	}
 	resBlock, err := b.clientCtx.Client.Block(b.ctx, &height)
 	if err != nil {
