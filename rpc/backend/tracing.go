@@ -34,7 +34,8 @@ func (b *Backend) TraceTransaction(hash common.Hash, config *evmtypes.TraceConfi
 	}
 
 	// check tx index is not out of bound
-	if uint32(len(blk.Block.Txs)) < transaction.TxIndex { //#nosec G115
+	txsLen := uint32(len(blk.Block.Txs)) // #nosec G115
+	if txsLen < transaction.TxIndex {
 		b.logger.Debug("tx index out of bounds", "index", transaction.TxIndex, "hash", hash.String(), "height", blk.Block.Height)
 		return nil, fmt.Errorf("transaction not included in block %v", blk.Block.Height)
 	}
