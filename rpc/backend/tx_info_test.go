@@ -631,14 +631,13 @@ func (suite *BackendTestSuite) TestCheckChainIdWithTransactionReceipt() {
 	suite.NoError(err)
 
 	testCases := []struct {
-		name            string
-		registerMock    func()
-		tx              *evmtypes.MsgEthereumTx
-		block           *types.Block
-		blockResult     *abci.ResponseFinalizeBlock
-		expTxReceipt    map[string]interface{}
-		expKeyMatchPass bool
-		expApiPass      bool
+		name         string
+		registerMock func()
+		tx           *evmtypes.MsgEthereumTx
+		block        *types.Block
+		blockResult  *abci.ResponseFinalizeBlock
+		expTxReceipt map[string]interface{}
+		expPass      bool
 	}{
 		{
 			"success- Receipts with a different chain ID within a patched height",
@@ -686,7 +685,6 @@ func (suite *BackendTestSuite) TestCheckChainIdWithTransactionReceipt() {
 			},
 			map[string]interface{}(nil),
 			true,
-			true,
 		},
 		{
 			"false- Receipts with a different chain ID not in the patched height. expected to return an invalid chain ID",
@@ -733,7 +731,6 @@ func (suite *BackendTestSuite) TestCheckChainIdWithTransactionReceipt() {
 				},
 			},
 			map[string]interface{}(nil),
-			false,
 			false, // invalid chain id error
 		},
 	}
@@ -749,30 +746,15 @@ func (suite *BackendTestSuite) TestCheckChainIdWithTransactionReceipt() {
 			suite.Require().NoError(err)
 
 			txReceipt, err := suite.backend.GetTransactionReceipt(common.HexToHash(tc.tx.Hash))
-			if tc.expApiPass {
+			if tc.expPass {
 				suite.Require().NoError(err)
 
-				if tc.expKeyMatchPass {
-
-					// check all expected receipt keys are exist.
-					for k, _ := range tc.expTxReceipt {
-						_, keyExist := txReceipt[k]
-						suite.Require().True(keyExist)
-					}
-
-				} else {
-
-					anyKeyNotExist := false
-					// check the receipt keys are exist.
-					for k, _ := range tc.expTxReceipt {
-						_, keyExist := txReceipt[k]
-						if !keyExist {
-							anyKeyNotExist = true
-						}
-
-					}
-					suite.Require().True(anyKeyNotExist)
+				// if test passes, all expected receipt keys should be exist.
+				for k, _ := range tc.expTxReceipt {
+					_, keyExist := txReceipt[k]
+					suite.Require().True(keyExist)
 				}
+
 			} else {
 				suite.Require().Error(err)
 			}
