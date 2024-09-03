@@ -194,7 +194,16 @@ func (b *Backend) GetTransactionReceipt(hash common.Hash) (map[string]interface{
 		return nil, err
 	}
 
-	from, err := ethMsg.GetSender(chainID.ToInt())
+	// NOTE
+	// This patch applies only to the period when the chain-id was set to 9000 between the v8 and v8.1.1 versions of Canto.
+	// It is intended to ensure that reverted transaction receipt returns the same results instead of 'invalid chain id' error.
+	// The upgrade height for v8 is 10848200, and for v8.1.1, it is  10849447.
+	var from common.Address
+	if res.Height >= 10848200 && res.Height < 10849447 {
+		from, err = ethMsg.GetSender(big.NewInt(9000)) // 9000 is the default chain-id that was applied during that period.
+	} else {
+		from, err = ethMsg.GetSender(chainID.ToInt())
+	}
 	if err != nil {
 		return nil, err
 	}
