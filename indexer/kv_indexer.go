@@ -83,8 +83,8 @@ func (kv *KVIndexer) IndexBlock(block *tmtypes.Block, txResults []*abci.Response
 
 			txResult := ethermint.TxResult{
 				Height:     height,
-				TxIndex:    uint32(txIndex),
-				MsgIndex:   uint32(msgIndex),
+				TxIndex:    uint32(txIndex),  //#nosec G115
+				MsgIndex:   uint32(msgIndex), //#nosec G115
 				EthTxIndex: ethTxIndex,
 			}
 			if result.Code != abci.CodeTypeOK {
@@ -226,5 +226,5 @@ func parseBlockNumberFromKey(key []byte) (int64, error) {
 		return 0, fmt.Errorf("wrong tx index key length, expect: %d, got: %d", TxIndexKeyLength, len(key))
 	}
 
-	return int64(sdk.BigEndianToUint64(key[1:9])), nil
+	return int64(sdk.BigEndianToUint64(key[1:9])), nil //#nosec G115
 }

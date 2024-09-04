@@ -546,7 +546,7 @@ func (mfd EthMempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 
 				evmDenom := params.EvmDenom
 				feeAmt := ethMsg.GetFee()
-				glDec := sdk.NewDec(int64(ethMsg.GetGas()))
+				glDec := sdk.NewDec(int64(ethMsg.GetGas())) //#nosec G115
 				requiredFee := ctx.MinGasPrices().AmountOf(evmDenom).Mul(glDec)
 				if sdk.NewDecFromBigInt(feeAmt).LT(requiredFee) {
 					return ctx, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "insufficient fees; got: %s required: %s", feeAmt, requiredFee)

@@ -151,9 +151,9 @@ func (b *Backend) FeeHistory(
 		if err != nil {
 			return nil, err
 		}
-		blockEnd = int64(blockNumber)
+		blockEnd = int64(blockNumber) //#nosec G115
 	}
-	userBlockCountInt := int64(userBlockCount)
+	userBlockCountInt := int64(userBlockCount) //#nosec G115
 	maxBlockCount := int64(b.cfg.JSONRPC.FeeHistoryCap)
 	if userBlockCountInt > maxBlockCount {
 		return nil, fmt.Errorf("FeeHistory user block count %d higher than %d", userBlockCountInt, maxBlockCount)
@@ -181,7 +181,7 @@ func (b *Backend) FeeHistory(
 
 	// fetch block
 	for blockID := blockStart; blockID < blockEnd; blockID++ {
-		index := int32(blockID - blockStart)
+		index := int32(blockID - blockStart) //#nosec G115
 		// tendermint block
 		tendermintblock, err := b.GetTendermintBlockByNumber(rpctypes.BlockNumber(blockID))
 		if tendermintblock == nil {
