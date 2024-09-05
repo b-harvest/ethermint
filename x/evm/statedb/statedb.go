@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+type EventConverter = func(sdk.Event) (*ethtypes.Log, error)
+
 // revision is the identifier of a version of state.
 // it consists of an auto-increment id and a journal index.
 // it's safer to use than using journal index alone.
@@ -318,7 +320,25 @@ func (s *StateDB) RevertWithMultiStoreSnapshot(snapshot sdk.MultiStore) {
 
 // If revert is occurred, the snapshot of journal is overwrited to MultiStore of ctx.
 // The events is just for debug.
-func (s *StateDB) PostPrecompileProcessing(snapshot sdk.MultiStore, events sdk.Events) {
+func (s *StateDB) PostPrecompileProcessing(snapshot sdk.MultiStore, events sdk.Events, contract common.Address, converter EventConverter) {
+
+	//convert native events to evm logs
+	if converter != nil && len(events) > 0 {
+		for _, event := range events {
+			log, err := converter(event)
+			if err != nil {
+				s.ctx.Logger().Error("failed to convert event", "err", err)
+				continue
+			}
+			if log == nil {
+				continue
+			}
+
+			log.Address = contract
+			s.AddLog(log)
+		}
+	}
+
 	s.journal.append(precompileChange{snapshot, events})
 }
 
