@@ -653,6 +653,8 @@ func (app *EthermintApp) BlockedAddrs() map[string]bool {
 		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
 	}
 
+	// TODO(dudong2): need to add precompiled contract address?
+
 	return blockedAddrs
 }
 
