@@ -321,8 +321,7 @@ func (s *StateDB) RevertWithMultiStoreSnapshot(snapshot sdk.MultiStore) {
 // If revert is occurred, the snapshot of journal is overwrited to MultiStore of ctx.
 // The events is just for debug.
 func (s *StateDB) PostPrecompileProcessing(snapshot sdk.MultiStore, events sdk.Events, contract common.Address, converter EventConverter) {
-
-	//convert native events to evm logs
+	// convert native events to evm logs
 	if converter != nil && len(events) > 0 {
 		for _, event := range events {
 			log, err := converter(event)
