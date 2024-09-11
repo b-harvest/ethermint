@@ -1,17 +1,21 @@
 package statedb
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 )
+
+type EventConverter = func(sdk.Event) (*ethtypes.Log, error)
 
 // revision is the identifier of a version of state.
 // it consists of an auto-increment id and a journal index.
@@ -31,6 +35,9 @@ var _ vm.StateDB = &StateDB{}
 type StateDB struct {
 	keeper Keeper
 	ctx    sdk.Context
+
+	cacheCtx   sdk.Context
+	writeCache func()
 
 	// Journal of state modifications. This is the backbone of
 	// Snapshot and RevertToSnapshot.
@@ -283,6 +290,57 @@ func (s *StateDB) setStateObject(object *stateObject) {
 	s.stateObjects[object.Address()] = object
 }
 
+func (s *StateDB) GetCacheContext() (sdk.Context, error) {
+	if s.writeCache == nil {
+		if s.ctx.MultiStore() == nil {
+			return s.ctx, errors.New("ctx has no multi store")
+		}
+		s.cacheCtx, s.writeCache = s.ctx.CacheContext()
+	}
+
+	return s.cacheCtx, nil
+}
+
+func (s *StateDB) MultiStoreSnapshot() (sdk.CacheMultiStore, error) {
+	ctx, err := s.GetCacheContext()
+	if err != nil { // means s.ctx.MultiStore() == nil
+		return nil, err
+	}
+
+	cms := ctx.MultiStore().(sdk.CacheMultiStore)
+	snapshot := cms.Copy()
+	return snapshot, nil
+}
+
+func (s *StateDB) RevertWithMultiStoreSnapshot(snapshot sdk.MultiStore) {
+	s.cacheCtx = s.cacheCtx.
+		WithMultiStore(snapshot).
+		WithEventManager(sdk.NewEventManager())
+}
+
+// If revert is occurred, the snapshot of journal is overwrited to MultiStore of ctx.
+// The events is just for debug.
+func (s *StateDB) PostPrecompileProcessing(snapshot sdk.MultiStore, events sdk.Events, contract common.Address, converter EventConverter) {
+	// convert native events to evm logs
+	if converter != nil && len(events) > 0 {
+		for _, event := range events {
+			log, err := converter(event)
+			if err != nil {
+				s.ctx.Logger().Error("failed to convert event", "err", err)
+				continue
+			}
+			if log == nil {
+				continue
+			}
+
+			log.Address = contract
+			s.AddLog(log)
+		}
+	}
+
+	s.journal.append(precompileChange{snapshot, events})
+}
+
 /*
  * SETTERS
  */
@@ -436,6 +494,11 @@ func (s *StateDB) RevertToSnapshot(revid int) {
 // Commit writes the dirty states to keeper
 // the StateDB object should be discarded after committed.
 func (s *StateDB) Commit() error {
+	// write all store updates from precompile
+	if s.writeCache != nil {
+		s.writeCache()
+	}
+
 	for _, addr := range s.journal.sortedDirties() {
 		obj := s.stateObjects[addr]
 		if obj.suicided {

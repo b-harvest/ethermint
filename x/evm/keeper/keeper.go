@@ -3,22 +3,27 @@ package keeper
 import (
 	"math/big"
 
+	"github.com/tendermint/tendermint/libs/log"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/tendermint/tendermint/libs/log"
 
 	ethermint "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm/statedb"
 	"github.com/evmos/ethermint/x/evm/types"
 )
+
+// CustomContractFn defines a custom precompiled contract generator with ctx, rules and returns a precompiled contract.
+type CustomContractFn func(sdk.Context, params.Rules) vm.PrecompiledContract
 
 // Keeper grants access to the EVM module state and implements the go-ethereum StateDB interface.
 type Keeper struct {
@@ -53,15 +58,21 @@ type Keeper struct {
 
 	// EVM Hooks for tx post-processing
 	hooks types.EvmHooks
+
+	customContractFns []CustomContractFn
 }
 
 // NewKeeper generates new evm module keeper
 func NewKeeper(
 	cdc codec.BinaryCodec,
-	storeKey, transientKey sdk.StoreKey, paramSpace paramtypes.Subspace,
-	ak types.AccountKeeper, bankKeeper types.BankKeeper, sk types.StakingKeeper,
+	storeKey, transientKey sdk.StoreKey,
+	paramSpace paramtypes.Subspace,
+	ak types.AccountKeeper,
+	bankKeeper types.BankKeeper,
+	sk types.StakingKeeper,
 	fmk types.FeeMarketKeeper,
 	tracer string,
+	customContractFns []CustomContractFn,
 ) *Keeper {
 	// ensure evm module account is set
 	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
@@ -75,15 +86,16 @@ func NewKeeper(
 
 	// NOTE: we pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	return &Keeper{
-		cdc:             cdc,
-		paramSpace:      paramSpace,
-		accountKeeper:   ak,
-		bankKeeper:      bankKeeper,
-		stakingKeeper:   sk,
-		feeMarketKeeper: fmk,
-		storeKey:        storeKey,
-		transientKey:    transientKey,
-		tracer:          tracer,
+		cdc:               cdc,
+		paramSpace:        paramSpace,
+		accountKeeper:     ak,
+		bankKeeper:        bankKeeper,
+		stakingKeeper:     sk,
+		feeMarketKeeper:   fmk,
+		storeKey:          storeKey,
+		transientKey:      transientKey,
+		tracer:            tracer,
+		customContractFns: customContractFns,
 	}
 }
 

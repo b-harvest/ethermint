@@ -22,6 +22,8 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // journalEntry is a modification entry in the state change journal that can be
@@ -139,6 +141,10 @@ type (
 		address *common.Address
 		slot    *common.Hash
 	}
+	precompileChange struct {
+		ms sdk.MultiStore
+		es sdk.Events
+	}
 )
 
 func (ch createObjectChange) revert(s *StateDB) {
@@ -239,5 +245,13 @@ func (ch accessListAddSlotChange) revert(s *StateDB) {
 }
 
 func (ch accessListAddSlotChange) dirtied() *common.Address {
+	return nil
+}
+
+func (ch precompileChange) revert(s *StateDB) {
+	s.RevertWithMultiStoreSnapshot(ch.ms)
+}
+
+func (ch precompileChange) dirtied() *common.Address {
 	return nil
 }

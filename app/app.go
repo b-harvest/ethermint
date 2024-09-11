@@ -349,9 +349,16 @@ func NewEthermintApp(
 	)
 
 	app.EvmKeeper = evmkeeper.NewKeeper(
-		appCodec, keys[evmtypes.StoreKey], tkeys[evmtypes.TransientKey], app.GetSubspace(evmtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
+		appCodec,
+		keys[evmtypes.StoreKey],
+		tkeys[evmtypes.TransientKey],
+		app.GetSubspace(evmtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.StakingKeeper,
+		app.FeeMarketKeeper,
 		tracer,
+		nil,
 	)
 
 	// Create IBC Keeper
@@ -645,6 +652,8 @@ func (app *EthermintApp) BlockedAddrs() map[string]bool {
 	for acc := range maccPerms {
 		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
 	}
+
+	// TODO(dudong2): need to add precompiled contract address?
 
 	return blockedAddrs
 }
