@@ -129,10 +129,10 @@ github.com/aws/aws-sdk-go-v2/service/sso v1.1.1/go.mod h1:SuZJxklHxLAXgLTc1iFXbE
 github.com/aws/aws-sdk-go-v2/service/sts v1.1.1/go.mod h1:Wi0EBZwiz/K44YliU0EKxqTCJGUfYTWXrrBwkq736bM=
 github.com/aws/smithy-go v1.1.0/go.mod h1:EzMw8dbp/YJL4A5/sbhGddag+NPT7q084agLbB9LgIw=
 github.com/aymerick/raymond v2.0.3-0.20180322193309-b565731e1464+incompatible/go.mod h1:osfaiScAUVup+UC9Nfq76eWqDhXlp+4UYaA8uhTBO6g=
-github.com/b-harvest/cosmos-sdk v0.0.0-20240911102830-746c27bc64cc h1:mhlZ13a5JQGUfJ22sBiwu3fW9qLX4kIsSIROK3iibkw=
-github.com/b-harvest/cosmos-sdk v0.0.0-20240911102830-746c27bc64cc/go.mod h1:bScuNwWAP0TZJpUf+SHXRU3xGoUPp+X9nAzfeIXts40=
-github.com/b-harvest/go-ethereum v0.0.0-20240911101507-393bfcf2bce3 h1:0QG0bGcRJm3UwY1zGGUgI6w6DC9mraFhhVMV+SZQVPU=
-github.com/b-harvest/go-ethereum v0.0.0-20240911101507-393bfcf2bce3/go.mod h1:IJBNMtzKcNHPtllYihy6BL2IgK1u+32JriaTbdt4v+w=
+github.com/b-harvest/cosmos-sdk v0.0.0-20240911104149-d2486fbebf5f h1:ythZJR9joPUWnQ3q0hkFMm9up1YpaZfQ80PuRO0dAYA=
+github.com/b-harvest/cosmos-sdk v0.0.0-20240911104149-d2486fbebf5f/go.mod h1:bScuNwWAP0TZJpUf+SHXRU3xGoUPp+X9nAzfeIXts40=
+github.com/b-harvest/go-ethereum v0.0.0-20240911104320-ceb46abda914 h1:KI5XntTxBXkAyYPdT+FIxi4bT3SPf0poY7BlepfFL0k=
+github.com/b-harvest/go-ethereum v0.0.0-20240911104320-ceb46abda914/go.mod h1:IJBNMtzKcNHPtllYihy6BL2IgK1u+32JriaTbdt4v+w=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
