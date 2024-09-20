@@ -147,7 +147,7 @@ def test_event_log_filter_by_contract(cluster):
 
     # Create new filter from contract
     current_height = hex(w3.eth.get_block_number())
-    flt = contract.events.ChangeGreeting.createFilter(fromBlock=current_height)
+    flt = contract.events.ChangeGreeting.create_filter(fromBlock=current_height)
 
     # without tx
     assert flt.get_new_entries() == []  # GetFilterChanges
@@ -160,7 +160,7 @@ def test_event_log_filter_by_contract(cluster):
     tx_receipt = send_transaction(w3, tx)
     assert tx_receipt.status == 1
 
-    log = contract.events.ChangeGreeting().processReceipt(tx_receipt)[0]
+    log = contract.events.ChangeGreeting().process_receipt(tx_receipt)[0]
     assert log["event"] == "ChangeGreeting"
 
     new_entries = flt.get_new_entries()

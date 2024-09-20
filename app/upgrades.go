@@ -35,11 +35,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
@@ -51,7 +49,6 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 	cdc codec.BinaryCodec,
 	clientKeeper clientkeeper.Keeper,
 	consensusParamsKeeper consensusparamskeeper.Keeper,
-	paramsKeeper paramskeeper.Keeper,
 ) {
 	planName := "integration-test-upgrade"
 	// Set param key table for params module migration
@@ -74,8 +71,6 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 			keyTable = govv1.ParamKeyTable() //nolint:staticcheck
 		case crisistypes.ModuleName:
 			keyTable = crisistypes.ParamKeyTable() //nolint:staticcheck
-		case ibctransfertypes.ModuleName:
-			keyTable = ibctransfertypes.ParamKeyTable()
 		case evmtypes.ModuleName:
 			keyTable = evmtypes.ParamKeyTable() //nolint:staticcheck
 		case feemarkettypes.ModuleName:
@@ -101,11 +96,6 @@ func (app *EthermintApp) RegisterUpgradeHandlers(
 			// ibc v7
 			// OPTIONAL: prune expired tendermint consensus states to save storage space
 			if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, clientKeeper); err != nil {
-				return fromVM, err
-			}
-
-			legacyBaseAppSubspace := paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
-			if err := baseapp.MigrateParams(sdkCtx, legacyBaseAppSubspace, &consensusParamsKeeper.ParamsStore); err != nil {
 				return fromVM, err
 			}
 
