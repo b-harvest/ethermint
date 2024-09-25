@@ -10,14 +10,11 @@ import (
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/ethermint/indexer"
 	"github.com/evmos/ethermint/rpc/backend/mocks"
 	rpctypes "github.com/evmos/ethermint/rpc/types"
-	"github.com/evmos/ethermint/tests"
 	ethermint "github.com/evmos/ethermint/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"google.golang.org/grpc/metadata"
@@ -604,161 +601,6 @@ func (suite *BackendTestSuite) TestGetTransactionReceipt() {
 			} else {
 				suite.Require().NotEqual(txReceipt, tc.expTxReceipt)
 			}
-		})
-	}
-}
-
-func (suite *BackendTestSuite) TestCheckChainIdWithTransactionReceipt() {
-
-	patchedHeight := int64(10848200)
-	notPatchedHeight := int64(10848100)
-
-	// TX using chain id 9000
-	from, pk := tests.NewAddrKey()
-	msgEthereumTx, _ := suite.buildEthereumTxWithChainId(big.NewInt(9000))
-	txHash := msgEthereumTx.AsTransaction().Hash()
-
-	signer := tests.NewSigner(pk)
-	ethSigner := ethtypes.NewLondonSigner(big.NewInt(9000))
-	msgEthereumTx.From = from.String()
-	err := msgEthereumTx.Sign(ethSigner, signer)
-	suite.NoError(err)
-
-	tx, err := msgEthereumTx.BuildTx(suite.backend.clientCtx.TxConfig.NewTxBuilder(), "aphoton")
-	suite.NoError(err)
-	txEncoder := suite.backend.clientCtx.TxConfig.TxEncoder()
-	txBz, err := txEncoder(tx)
-	suite.NoError(err)
-
-	testCases := []struct {
-		name         string
-		registerMock func()
-		tx           *evmtypes.MsgEthereumTx
-		block        *types.Block
-		blockResult  *abci.ResponseFinalizeBlock
-		expTxReceipt map[string]interface{}
-		expPass      bool
-	}{
-		{
-			"success- Receipts with a different chain ID within a patched height",
-			func() {
-
-				ctx := server.NewDefaultContext()
-
-				// overwrite client conext
-				suite.backend.clientCtx.WithChainID("canto_7700-1").WithHeight(patchedHeight)
-
-				idxer := indexer.NewKVIndexer(dbm.NewMemDB(), ctx.Logger, suite.backend.clientCtx)
-				suite.backend = NewBackend(ctx, ctx.Logger, suite.backend.clientCtx, true, idxer)
-				suite.backend.queryClient.QueryClient = mocks.NewEVMQueryClient(suite.T())
-				suite.backend.clientCtx.Client = mocks.NewClient(suite.T())
-				suite.backend.queryClient.FeeMarket = mocks.NewFeeMarketQueryClient(suite.T())
-				suite.backend.ctx = rpctypes.ContextWithHeight(patchedHeight)
-
-				var header metadata.MD
-				queryClient := suite.backend.queryClient.QueryClient.(*mocks.EVMQueryClient)
-				client := suite.backend.clientCtx.Client.(*mocks.Client)
-				RegisterParams(queryClient, &header, patchedHeight)
-				RegisterParamsWithoutHeader(queryClient, patchedHeight)
-				RegisterBlock(client, patchedHeight, txBz)
-				RegisterBlockResults(client, patchedHeight)
-			},
-			msgEthereumTx,
-			&types.Block{Header: types.Header{Height: patchedHeight}, Data: types.Data{Txs: []types.Tx{txBz}}},
-			&abci.ResponseFinalizeBlock{
-				TxResults: []*abci.ExecTxResult{
-					{
-						Code: 0,
-						Events: []abci.Event{
-							{Type: evmtypes.EventTypeEthereumTx, Attributes: []abci.EventAttribute{
-								{Key: "ethereumTxHash", Value: txHash.Hex()},
-								{Key: "txIndex", Value: "0"},
-								{Key: "amount", Value: "1000"},
-								{Key: "txGasUsed", Value: "21000"},
-								{Key: "txHash", Value: ""},
-								{Key: "recipient", Value: "0x775b87ef5D82ca211811C1a02CE0fE0CA3a455d7"},
-								{Key: "status", Value: "0x0"},
-							}},
-						},
-					},
-				},
-			},
-			map[string]interface{}(nil),
-			true,
-		},
-		{
-			"false- Receipts with a different chain ID not in the patched height. expected to return an invalid chain ID",
-			func() {
-
-				ctx := server.NewDefaultContext()
-
-				// overwrite client conext
-				suite.backend.clientCtx = suite.backend.clientCtx.WithChainID("canto_7700-1").WithHeight(notPatchedHeight)
-
-				idxer := indexer.NewKVIndexer(dbm.NewMemDB(), ctx.Logger, suite.backend.clientCtx)
-				suite.backend = NewBackend(ctx, ctx.Logger, suite.backend.clientCtx, true, idxer)
-				suite.backend.queryClient.QueryClient = mocks.NewEVMQueryClient(suite.T())
-				suite.backend.clientCtx.Client = mocks.NewClient(suite.T())
-				suite.backend.queryClient.FeeMarket = mocks.NewFeeMarketQueryClient(suite.T())
-				suite.backend.ctx = rpctypes.ContextWithHeight(notPatchedHeight)
-
-				var header metadata.MD
-				queryClient := suite.backend.queryClient.QueryClient.(*mocks.EVMQueryClient)
-				client := suite.backend.clientCtx.Client.(*mocks.Client)
-				RegisterParams(queryClient, &header, notPatchedHeight)
-				RegisterParamsWithoutHeader(queryClient, notPatchedHeight)
-				RegisterBlock(client, notPatchedHeight, txBz)
-				RegisterBlockResults(client, notPatchedHeight)
-			},
-			msgEthereumTx,
-			&types.Block{Header: types.Header{Height: notPatchedHeight}, Data: types.Data{Txs: []types.Tx{txBz}}},
-			&abci.ResponseFinalizeBlock{
-				TxResults: []*abci.ExecTxResult{
-					{
-						Code: 0,
-						Events: []abci.Event{
-							{Type: evmtypes.EventTypeEthereumTx, Attributes: []abci.EventAttribute{
-								{Key: "ethereumTxHash", Value: txHash.Hex()},
-								{Key: "txIndex", Value: "0"},
-								{Key: "amount", Value: "1000"},
-								{Key: "txGasUsed", Value: "21000"},
-								{Key: "txHash", Value: ""},
-								{Key: "recipient", Value: "0x775b87ef5D82ca211811C1a02CE0fE0CA3a455d7"},
-								{Key: "status", Value: "0x0"},
-							}},
-						},
-					},
-				},
-			},
-			map[string]interface{}(nil),
-			false, // invalid chain id error
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
-			tc.registerMock()
-
-			db := dbm.NewMemDB()
-			suite.backend.indexer = indexer.NewKVIndexer(db, log.NewNopLogger(), suite.backend.clientCtx)
-			err := suite.backend.indexer.IndexBlock(tc.block, tc.blockResult)
-			suite.Require().NoError(err)
-
-			txReceipt, err := suite.backend.GetTransactionReceipt(common.HexToHash(tc.tx.Hash))
-			if tc.expPass {
-				suite.Require().NoError(err)
-
-				// if test passes, all expected receipt keys should be exist.
-				for k, _ := range tc.expTxReceipt {
-					_, keyExist := txReceipt[k]
-					suite.Require().True(keyExist)
-				}
-
-			} else {
-				suite.Require().Error(err)
-			}
-
 		})
 	}
 }

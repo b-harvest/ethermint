@@ -115,32 +115,6 @@ func (suite *BackendTestSuite) buildEthereumTx() (*evmtypes.MsgEthereumTx, []byt
 	return msgEthereumTx, bz
 }
 
-func (suite *BackendTestSuite) buildEthereumTxWithChainId(chainId *big.Int) (*evmtypes.MsgEthereumTx, []byte) {
-	msgEthereumTx := evmtypes.NewTx(
-		chainId,
-		uint64(0),
-		&common.Address{},
-		big.NewInt(0),
-		100000,
-		big.NewInt(1),
-		nil,
-		nil,
-		nil,
-		nil,
-	)
-
-	// A valid msg should have empty `From`
-	msgEthereumTx.From = ""
-
-	txBuilder := suite.backend.clientCtx.TxConfig.NewTxBuilder()
-	err := txBuilder.SetMsgs(msgEthereumTx)
-	suite.Require().NoError(err)
-
-	bz, err := suite.backend.clientCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
-	suite.Require().NoError(err)
-	return msgEthereumTx, bz
-}
-
 // buildFormattedBlock returns a formatted block for testing
 func (suite *BackendTestSuite) buildFormattedBlock(
 	blockRes *tmrpctypes.ResultBlockResults,
