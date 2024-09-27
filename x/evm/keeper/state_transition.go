@@ -89,7 +89,7 @@ func (k *Keeper) NewEVM(
 		return bytes.Compare(active[i].Bytes(), active[j].Bytes()) < 0
 	})
 
-	return k.evmConstructor(blockCtx, txCtx, stateDB, cfg.ChainConfig, vmConfig, k.customPrecompiles)
+	return k.evmConstructor(blockCtx, txCtx, stateDB, cfg.ChainConfig, vmConfig, contracts, active)
 }
 
 // GetHashFn implements vm.GetHashFunc for Ethermint. It handles 3 cases:

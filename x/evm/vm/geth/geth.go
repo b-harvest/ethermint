@@ -44,11 +44,14 @@ func NewEVM(
 	stateDB vm.StateDB,
 	chainConfig *params.ChainConfig,
 	config vm.Config,
-	_ evm.PrecompiledContracts, // unused
+	precompiles evm.PrecompiledContracts,
+	activePrecompiles []common.Address,
 ) evm.EVM {
-	return &EVM{
+	evm := &EVM{
 		EVM: vm.NewEVM(blockCtx, txCtx, stateDB, chainConfig, config),
 	}
+	evm.WithPrecompiles(precompiles, activePrecompiles)
+	return evm
 }
 
 // Context returns the EVM's Block Context

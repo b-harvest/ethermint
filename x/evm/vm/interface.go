@@ -77,5 +77,6 @@ type Constructor func(
 	stateDB vm.StateDB,
 	chainConfig *params.ChainConfig,
 	config vm.Config,
-	customPrecompiles PrecompiledContracts,
+	precompiles PrecompiledContracts,
+	activePrecompiles []common.Address,
 ) EVM
