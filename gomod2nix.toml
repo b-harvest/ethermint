@@ -45,8 +45,9 @@ schema = 3
     version = "v0.0.0-20231103111158-e83a20081ced"
     hash = "sha256-8MwGwMhp+fX9KSLO8Wjt46CZ4mrhS/HGplE8miEyAy8="
   [mod."cosmossdk.io/store"]
-    version = "v1.1.0"
-    hash = "sha256-CMV+5pn1BP5ixj9pICPlbIQ9Ezy6uP7mwG7SSTXkb3k="
+    version = "v0.0.0-20240925105008-8cc581adc6ab"
+    hash = "sha256-h+lh6Yz4bTQs0mbWg+lu00rh18N7TFkAxZZh23XNnrM="
+    replaced = "github.com/b-harvest/cosmos-sdk/store"
   [mod."cosmossdk.io/tools/confix"]
     version = "v0.1.0"
     hash = "sha256-PvIYbcjsATI+gP0+efJZjlGhaClx4SNfadlVY3Ok9TE="
@@ -244,8 +245,9 @@ schema = 3
     version = "v1.6.1"
     hash = "sha256-zOpoaepCfPLmU9iQji/Ait+SVEHI9eF3rwtW0h/8lho="
   [mod."github.com/ethereum/go-ethereum"]
-    version = "v1.10.26"
-    hash = "sha256-gkMEwJ4rOgn12amD4QpZ4th/10uyTTeoFmpseuKDQPs="
+    version = "v0.0.0-20240925105515-5fa8b7772734"
+    hash = "sha256-npB5EhxO35fTaKDqkLiS+zAJgg6iX9U42lbbfsyW3W8="
+    replaced = "github.com/b-harvest/go-ethereum"
   [mod."github.com/fatih/color"]
     version = "v1.16.0"
     hash = "sha256-Aq/SM28aPJVzvapllQ64R/DM4aZ5CHPewcm/AUJPyJQ="
