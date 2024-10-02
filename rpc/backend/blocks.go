@@ -401,8 +401,8 @@ func (b *Backend) RPCBlockFromTendermintBlock(
 		rpcTx, err := rpctypes.NewRPCTransaction(
 			tx,
 			common.BytesToHash(block.Hash()),
-			uint64(block.Height),
-			uint64(txIndex),
+			uint64(block.Height), //#nosec G115
+			uint64(txIndex),      //#nosec G115
 			baseFee,
 			b.chainID,
 		)
@@ -457,7 +457,7 @@ func (b *Backend) RPCBlockFromTendermintBlock(
 			// block gas limit has exceeded, other txs must have failed with same reason.
 			break
 		}
-		gasUsed += uint64(txsResult.GetGasUsed())
+		gasUsed += uint64(txsResult.GetGasUsed()) //#nosec G115
 	}
 
 	formattedBlock := rpctypes.FormatBlock(

@@ -181,7 +181,7 @@ func (b *Backend) processBlock(
 			b.logger.Debug("failed to decode transaction in block", "height", blockHeight, "error", err.Error())
 			continue
 		}
-		txGasUsed := uint64(eachTendermintTxResult.GasUsed)
+		txGasUsed := uint64(eachTendermintTxResult.GasUsed) //#nosec G115
 		for _, msg := range tx.GetMsgs() {
 			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
 			if !ok {

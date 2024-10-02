@@ -82,7 +82,7 @@ func EthHeaderFromTendermint(header tmtypes.Header, bloom ethtypes.Bloom, baseFe
 		Number:      big.NewInt(header.Height),
 		GasLimit:    0,
 		GasUsed:     0,
-		Time:        uint64(header.Time.UTC().Unix()),
+		Time:        uint64(header.Time.UTC().Unix()), //#nosec G115
 		Extra:       []byte{},
 		MixDigest:   common.Hash{},
 		Nonce:       ethtypes.BlockNonce{},
@@ -128,7 +128,7 @@ func FormatBlock(
 	}
 
 	result := map[string]interface{}{
-		"number":           hexutil.Uint64(header.Height),
+		"number":           hexutil.Uint64(header.Height), //#nosec G115
 		"hash":             hexutil.Bytes(header.Hash()),
 		"parentHash":       common.BytesToHash(header.LastBlockID.Hash.Bytes()),
 		"nonce":            ethtypes.BlockNonce{},   // PoW specific
@@ -139,10 +139,10 @@ func FormatBlock(
 		"mixHash":          common.Hash{},
 		"difficulty":       (*hexutil.Big)(big.NewInt(0)),
 		"extraData":        "0x",
-		"size":             hexutil.Uint64(size),
-		"gasLimit":         hexutil.Uint64(gasLimit), // Static gas limit
+		"size":             hexutil.Uint64(size),     //#nosec G115
+		"gasLimit":         hexutil.Uint64(gasLimit), //#nosec G115 // Static gas limit
 		"gasUsed":          (*hexutil.Big)(gasUsed),
-		"timestamp":        hexutil.Uint64(header.Time.Unix()),
+		"timestamp":        hexutil.Uint64(header.Time.Unix()), //#nosec G115
 		"transactionsRoot": transactionsRoot,
 		"receiptsRoot":     ethtypes.EmptyRootHash,
 

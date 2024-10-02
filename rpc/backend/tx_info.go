@@ -88,8 +88,8 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*rpctypes.RPCTransac
 	return rpctypes.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.BlockID.Hash.Bytes()),
-		uint64(res.Height),
-		uint64(res.EthTxIndex),
+		uint64(res.Height),     //#nosec G115
+		uint64(res.EthTxIndex), //#nosec G115
 		baseFee,
 		b.chainID,
 	)
@@ -179,7 +179,7 @@ func (b *Backend) GetTransactionReceipt(hash common.Hash) (map[string]interface{
 		return nil, nil
 	}
 	for _, txResult := range blockRes.TxsResults[0:res.TxIndex] {
-		cumulativeGasUsed += uint64(txResult.GasUsed)
+		cumulativeGasUsed += uint64(txResult.GasUsed) //#nosec G115
 	}
 	cumulativeGasUsed += res.CumulativeGasUsed
 
@@ -236,8 +236,8 @@ func (b *Backend) GetTransactionReceipt(hash common.Hash) (map[string]interface{
 		// Inclusion information: These fields provide information about the inclusion of the
 		// transaction corresponding to this receipt.
 		"blockHash":        common.BytesToHash(resBlock.Block.Header.Hash()).Hex(),
-		"blockNumber":      hexutil.Uint64(res.Height),
-		"transactionIndex": hexutil.Uint64(res.EthTxIndex),
+		"blockNumber":      hexutil.Uint64(res.Height),     //#nosec G115
+		"transactionIndex": hexutil.Uint64(res.EthTxIndex), //#nosec G115
 
 		// sender and receiver (contract or EOA) addreses
 		"from": from,
@@ -417,7 +417,7 @@ func (b *Backend) GetTransactionByBlockAndIndex(block *tmrpctypes.ResultBlock, i
 	return rpctypes.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.Block.Hash()),
-		uint64(block.Block.Height),
+		uint64(block.Block.Height), //#nosec G115
 		uint64(idx),
 		baseFee,
 		b.chainID,
