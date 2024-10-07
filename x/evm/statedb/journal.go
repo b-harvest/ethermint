@@ -249,7 +249,11 @@ func (ch accessListAddSlotChange) dirtied() *common.Address {
 }
 
 func (ch precompileChange) revert(s *StateDB) {
-	s.RevertWithMultiStoreSnapshot(ch.ms)
+	s.cacheCtx = s.cacheCtx.WithMultiStore(ch.ms)
+	s.writeCache = func() {
+		s.cacheCtx.EventManager().EmitEvents(ch.es)
+		ch.ms.CacheMultiStore().Write()
+	}
 }
 
 func (ch precompileChange) dirtied() *common.Address {
