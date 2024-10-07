@@ -135,7 +135,7 @@ func ParseTxResult(result *abci.ExecTxResult, tx sdk.Tx) (*ParsedTxs, error) {
 
 	// some old versions miss some events, fill it with tx result
 	if len(p.Txs) == 1 {
-		p.Txs[0].GasUsed = uint64(result.GasUsed)
+		p.Txs[0].GasUsed = uint64(result.GasUsed) //#nosec G115
 	}
 
 	// this could only happen if tx exceeds block gas limit

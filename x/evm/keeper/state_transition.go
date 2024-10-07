@@ -16,7 +16,9 @@
 package keeper
 
 import (
+	"bytes"
 	"math/big"
+	"sort"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
@@ -71,7 +73,23 @@ func (k *Keeper) NewEVM(
 		tracer = k.Tracer(ctx, msg, cfg.ChainConfig)
 	}
 	vmConfig := k.VMConfig(ctx, msg, cfg, tracer)
-	return k.evmConstructor(blockCtx, txCtx, stateDB, cfg.ChainConfig, vmConfig, k.customPrecompiles)
+
+	rules := cfg.ChainConfig.Rules(big.NewInt(ctx.BlockHeight()), cfg.ChainConfig.MergeNetsplitBlock != nil)
+	contracts := make(map[common.Address]vm.PrecompiledContract)
+	active := make([]common.Address, 0)
+	for addr, c := range vm.DefaultPrecompiles(rules) {
+		contracts[addr] = c
+		active = append(active, addr)
+	}
+	for addr, c := range k.customPrecompiles {
+		contracts[addr] = c
+		active = append(active, addr)
+	}
+	sort.SliceStable(active, func(i, j int) bool {
+		return bytes.Compare(active[i].Bytes(), active[j].Bytes()) < 0
+	})
+
+	return k.evmConstructor(blockCtx, txCtx, stateDB, cfg.ChainConfig, vmConfig, contracts, active)
 }
 
 // GetHashFn implements vm.GetHashFunc for Ethermint. It handles 3 cases:

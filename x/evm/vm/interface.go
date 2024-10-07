@@ -41,7 +41,7 @@ type EVM interface {
 	Reset(txCtx vm.TxContext, statedb vm.StateDB)
 	Cancel()
 	Cancelled() bool //nolint
-	Interpreter() *vm.EVMInterpreter
+	Interpreter() vm.Interpreter
 	Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error)
 	CallCode(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error)
 	DelegateCall(caller vm.ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error)
@@ -60,13 +60,13 @@ type EVM interface {
 	ActivePrecompiles(rules params.Rules) []common.Address
 	Precompile(addr common.Address) (vm.PrecompiledContract, bool)
 	RunPrecompiledContract(
-		p StatefulPrecompiledContract,
-		addr common.Address,
+		p vm.PrecompiledContract,
+		caller vm.ContractRef,
 		input []byte,
 		suppliedGas uint64,
-		value *big.Int) (
-		ret []byte, remainingGas uint64, err error,
-	)
+		value *big.Int,
+		readOnly bool,
+	) (ret []byte, remainingGas uint64, err error)
 }
 
 // Constructor defines the function used to instantiate the EVM on
@@ -77,5 +77,6 @@ type Constructor func(
 	stateDB vm.StateDB,
 	chainConfig *params.ChainConfig,
 	config vm.Config,
-	customPrecompiles PrecompiledContracts,
+	precompiles PrecompiledContracts,
+	activePrecompiles []common.Address,
 ) EVM

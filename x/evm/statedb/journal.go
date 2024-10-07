@@ -21,6 +21,10 @@ import (
 	"math/big"
 	"sort"
 
+	storetypes "cosmossdk.io/store/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -139,6 +143,11 @@ type (
 		address *common.Address
 		slot    *common.Hash
 	}
+
+	precompileChange struct {
+		ms storetypes.MultiStore
+		es sdk.Events
+	}
 )
 
 func (ch createObjectChange) Revert(s *StateDB) {
@@ -239,5 +248,13 @@ func (ch accessListAddSlotChange) Revert(s *StateDB) {
 }
 
 func (ch accessListAddSlotChange) Dirtied() *common.Address {
+	return nil
+}
+
+func (ch precompileChange) Revert(s *StateDB) {
+	s.RevertWithMultiStoreSnapshot(ch.ms)
+}
+
+func (ch precompileChange) Dirtied() *common.Address {
 	return nil
 }
