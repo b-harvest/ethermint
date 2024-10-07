@@ -28,6 +28,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	oracleconfig "github.com/skip-mev/connect/v2/oracle/config"
 )
 
 const (
@@ -84,9 +85,10 @@ var evmTracers = []string{"json", "markdown", "struct", "access_list"}
 type Config struct {
 	config.Config
 
-	EVM     EVMConfig     `mapstructure:"evm"`
-	JSONRPC JSONRPCConfig `mapstructure:"json-rpc"`
-	TLS     TLSConfig     `mapstructure:"tls"`
+	EVM     EVMConfig              `mapstructure:"evm"`
+	JSONRPC JSONRPCConfig          `mapstructure:"json-rpc"`
+	TLS     TLSConfig              `mapstructure:"tls"`
+	Oracle  oracleconfig.AppConfig `mapstructure:"oracle"`
 }
 
 // EVMConfig defines the application configuration values for the EVM.
@@ -171,14 +173,22 @@ func AppConfig(denom string) (string, interface{}) {
 		srvCfg.MinGasPrices = "0" + denom
 	}
 
+	oracleConfig := oracleconfig.AppConfig{
+		Enabled:        true,
+		OracleAddress:  "localhost:8080",
+		ClientTimeout:  time.Second * 2,
+		MetricsEnabled: true,
+	}
+
 	customAppConfig := Config{
 		Config:  *srvCfg,
 		EVM:     *DefaultEVMConfig(),
 		JSONRPC: *DefaultJSONRPCConfig(),
 		TLS:     *DefaultTLSConfig(),
+		Oracle:  oracleConfig,
 	}
 
-	customAppTemplate := config.DefaultConfigTemplate + DefaultConfigTemplate
+	customAppTemplate := config.DefaultConfigTemplate + DefaultConfigTemplate + oracleconfig.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }
