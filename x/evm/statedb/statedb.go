@@ -312,32 +312,25 @@ func (s *StateDB) MultiStoreSnapshot() (sdk.CacheMultiStore, error) {
 	return snapshot, nil
 }
 
-func (s *StateDB) RevertWithMultiStoreSnapshot(snapshot sdk.MultiStore) {
-	s.cacheCtx = s.cacheCtx.
-		WithMultiStore(snapshot).
-		WithEventManager(sdk.NewEventManager())
+func (s *StateDB) ProcessPrecompileEvents(contract common.Address, events sdk.Events, converter EventConverter) {
+	// convert native events to evm logs
+	for _, event := range events {
+		log, err := converter(event)
+		if err != nil {
+			s.ctx.Logger().Error("failed to convert event", "err", err)
+			continue
+		}
+		if log == nil {
+			continue
+		}
+
+		log.Address = contract
+		s.AddLog(log)
+	}
 }
 
-// If revert is occurred, the snapshot of journal is overwrited to MultiStore of ctx.
-// The events is just for debug.
-func (s *StateDB) PostPrecompileProcessing(snapshot sdk.MultiStore, events sdk.Events, contract common.Address, converter EventConverter) {
-	// convert native events to evm logs
-	if converter != nil && len(events) > 0 {
-		for _, event := range events {
-			log, err := converter(event)
-			if err != nil {
-				s.ctx.Logger().Error("failed to convert event", "err", err)
-				continue
-			}
-			if log == nil {
-				continue
-			}
-
-			log.Address = contract
-			s.AddLog(log)
-		}
-	}
-
+// If revert is occurred, the snapshot of journal is overwritten.
+func (s *StateDB) AddPrecompileSnapshot(snapshot sdk.MultiStore, events sdk.Events) {
 	s.journal.append(precompileChange{snapshot, events})
 }
 
