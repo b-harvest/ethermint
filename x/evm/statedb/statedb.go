@@ -22,6 +22,7 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/store/cachemulti"
 	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -318,14 +319,14 @@ func (s *StateDB) GetCacheContext() (sdk.Context, error) {
 	return s.cacheCtx, nil
 }
 
-func (s *StateDB) MultiStoreSnapshot() (storetypes.CacheMultiStore, error) {
+func (s *StateDB) MultiStoreSnapshot() (cachemulti.Store, error) {
 	ctx, err := s.GetCacheContext()
 	if err != nil { // means s.ctx.MultiStore() == nil
-		return nil, err
+		return cachemulti.Store{}, err
 	}
 
-	cms := ctx.MultiStore().(storetypes.CacheMultiStore)
-	snapshot := cms.Copy()
+	cms := ctx.MultiStore().(cachemulti.Store)
+	snapshot := cms.Clone()
 	return snapshot, nil
 }
 

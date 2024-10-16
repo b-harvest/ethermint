@@ -7,6 +7,7 @@ toolchain go1.21.1
 require (
 	cosmossdk.io/api v0.7.5
 	cosmossdk.io/client/v2 v2.0.0-beta.1
+	cosmossdk.io/collections v0.4.0
 	cosmossdk.io/core v0.12.0
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.3.1
@@ -30,6 +31,7 @@ require (
 	github.com/cosmos/ibc-go/modules/capability v1.0.0
 	github.com/cosmos/ibc-go/v8 v8.3.2
 	github.com/cosmos/rosetta v0.0.0-20231205133638-3bc76705a1c6
+	github.com/crypto-org-chain/go-block-stm v0.0.0-20240912024944-1cd89976aa5e
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/gogo/protobuf v1.3.2
@@ -69,7 +71,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/storage v1.38.0 // indirect
-	cosmossdk.io/collections v0.4.0 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
 	cosmossdk.io/x/nft v0.0.0-20231023160833-026631cd833c // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
@@ -247,13 +248,14 @@ require (
 
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
-	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20240925105008-8cc581adc6ab
+	cosmossdk.io/store => /Users/dudong2/workspace/github.com/b-harvest/cosmos-sdk2/store
 	// use cosmos keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-
+	github.com/cosmos/cosmos-sdk => /Users/dudong2/workspace/github.com/b-harvest/cosmos-sdk
 	github.com/ethereum/go-ethereum => github.com/b-harvest/go-ethereum v0.0.0-20240925105515-5fa8b7772734
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	github.com/tidwall/btree => github.com/crypto-org-chain/btree v0.0.0-20240406140148-2687063b042c
 )
