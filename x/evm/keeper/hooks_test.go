@@ -66,13 +66,12 @@ func (suite *KeeperTestSuite) TestEvmHooks() {
 		k := suite.app.EvmKeeper
 		ctx := suite.ctx
 		txHash := common.BigToHash(big.NewInt(1))
-		vmdb, err := statedb.New(ctx, k, statedb.NewTxConfig(
+		vmdb := statedb.New(ctx, k, statedb.NewTxConfig(
 			common.BytesToHash(ctx.HeaderHash()),
 			txHash,
 			0,
 			0,
 		))
-		suite.Require().NoError(err)
 
 		vmdb.AddLog(&ethtypes.Log{
 			Topics:  []common.Hash{},

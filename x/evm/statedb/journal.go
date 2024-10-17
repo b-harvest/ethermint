@@ -20,9 +20,7 @@ import (
 	"bytes"
 	"sort"
 
-	storetypes "cosmossdk.io/store/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/store/cachemulti"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -137,14 +135,9 @@ type (
 		slot    *common.Hash
 	}
 
-	precompileChange struct {
-		ms storetypes.MultiStore
-		es sdk.Events
-	}
-
 	nativeChange struct {
-		ms storetypes.MultiStore
-		es int
+		snapshot cachemulti.Store
+		events   int // native events index
 	}
 )
 
@@ -240,28 +233,9 @@ func (ch accessListAddSlotChange) Dirtied() *common.Address {
 	return nil
 }
 
-func (ch precompileChange) Revert(s *StateDB) {
-	s.cacheCtx = s.cacheCtx.WithMultiStore(ch.ms)
-
-	// Necessary to revert the sdk state
-	s.writeCache = func() {
-		s.cacheCtx.EventManager().EmitEvents(ch.es)
-		ch.ms.CacheMultiStore().Write()
-	}
-}
-
-func (ch precompileChange) Dirtied() *common.Address {
-	return nil
-}
-
 func (ch nativeChange) Revert(s *StateDB) {
-	s.cacheCtx = s.cacheCtx.WithMultiStore(ch.ms)
-
-	// Necessary to revert the sdk state
-	s.writeCache = func() {
-		s.nativeEvents = s.nativeEvents[:len(s.nativeEvents)-ch.es]
-		ch.ms.CacheMultiStore().Write()
-	}
+	s.cacheMS.Restore(ch.snapshot)
+	s.nativeEvents = s.nativeEvents[:len(s.nativeEvents)-ch.events]
 }
 
 func (ch nativeChange) Dirtied() *common.Address {

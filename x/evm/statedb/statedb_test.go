@@ -81,8 +81,7 @@ func (suite *StateDBTestSuite) TestAccount() {
 			suite.Require().Equal(statedb.NewEmptyAccount(), acct)
 			suite.Require().False(acct.IsContract())
 
-			db, err := statedb.New(ctx, keeper, txConfig)
-			suite.Require().NoError(err)
+			db = statedb.New(ctx, keeper, txConfig)
 			suite.Require().Equal(true, db.Exist(address))
 			suite.Require().Equal(true, db.Empty(address))
 			suite.Require().Equal(big.NewInt(0), db.GetBalance(address))
@@ -109,8 +108,7 @@ func (suite *StateDBTestSuite) TestAccount() {
 			suite.Require().NotEmpty(keeper.GetCode(ctx, codeHash))
 
 			// suicide
-			db, err := statedb.New(ctx, keeper, txConfig)
-			suite.Require().NoError(err)
+			db = statedb.New(ctx, keeper, txConfig)
 			suite.Require().False(db.HasSuicided(address))
 			suite.Require().True(db.Suicide(address))
 
@@ -127,8 +125,7 @@ func (suite *StateDBTestSuite) TestAccount() {
 			ctx, keeper = newTestKeeper(suite.T(), cms)
 
 			// not accessible from StateDB anymore
-			db, err = statedb.New(ctx, keeper, txConfig)
-			suite.Require().NoError(err)
+			db = statedb.New(ctx, keeper, txConfig)
 			suite.Require().False(db.Exist(address))
 
 			// and cleared in keeper too
@@ -140,8 +137,7 @@ func (suite *StateDBTestSuite) TestAccount() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			raw, ctx, keeper := setupTestEnv(suite.T())
-			db, err := statedb.New(ctx, keeper, txConfig)
-			suite.Require().NoError(err)
+			db := statedb.New(ctx, keeper, txConfig)
 			tc.malleate(db, raw)
 		})
 	}
@@ -149,8 +145,7 @@ func (suite *StateDBTestSuite) TestAccount() {
 
 func (suite *StateDBTestSuite) TestAccountOverride() {
 	_, ctx, keeper := setupTestEnv(suite.T())
-	db, err := statedb.New(ctx, keeper, emptyTxConfig)
-	suite.Require().NoError(err)
+	db := statedb.New(ctx, keeper, emptyTxConfig)
 	// test balance carry over when overwritten
 	amount := big.NewInt(1)
 
@@ -178,8 +173,7 @@ func (suite *StateDBTestSuite) TestDBError() {
 	}
 	for _, tc := range testCases {
 		_, ctx, keeper := setupTestEnv(suite.T())
-		db, err := statedb.New(ctx, keeper, emptyTxConfig)
-		suite.Require().NoError(err)
+		db := statedb.New(ctx, keeper, emptyTxConfig)
 		tc.malleate(db)
 		suite.Require().Error(db.Commit())
 	}
@@ -217,8 +211,7 @@ func (suite *StateDBTestSuite) TestBalance() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			raw, ctx, keeper := setupTestEnv(suite.T())
-			db, err := statedb.New(ctx, keeper, emptyTxConfig)
-			suite.Require().NoError(err)
+			db := statedb.New(ctx, keeper, emptyTxConfig)
 			tc.malleate(db)
 
 			// check dirty state
@@ -272,8 +265,7 @@ func (suite *StateDBTestSuite) TestState() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			raw, ctx, keeper := setupTestEnv(suite.T())
-			db, err := statedb.New(ctx, keeper, emptyTxConfig)
-			suite.Require().NoError(err)
+			db := statedb.New(ctx, keeper, emptyTxConfig)
 			tc.malleate(db)
 			suite.Require().NoError(db.Commit())
 
@@ -284,8 +276,7 @@ func (suite *StateDBTestSuite) TestState() {
 			}
 
 			// check ForEachStorage
-			db, err = statedb.New(ctx, keeper, emptyTxConfig)
-			suite.Require().NoError(err)
+			db = statedb.New(ctx, keeper, emptyTxConfig)
 			collected := CollectContractStorage(db)
 			if len(tc.expStates) > 0 {
 				suite.Require().Equal(tc.expStates, collected)
@@ -318,8 +309,7 @@ func (suite *StateDBTestSuite) TestCode() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			raw, ctx, keeper := setupTestEnv(suite.T())
-			db, err := statedb.New(ctx, keeper, emptyTxConfig)
-			suite.Require().NoError(err)
+			db := statedb.New(ctx, keeper, emptyTxConfig)
 			tc.malleate(db)
 
 			// check dirty state
@@ -331,8 +321,7 @@ func (suite *StateDBTestSuite) TestCode() {
 
 			// check the committed state
 			ctx, keeper = newTestKeeper(suite.T(), raw)
-			db, err = statedb.New(ctx, keeper, emptyTxConfig)
-			suite.Require().NoError(err)
+			db = statedb.New(ctx, keeper, emptyTxConfig)
 			suite.Require().Equal(tc.expCode, db.GetCode(address))
 			suite.Require().Equal(len(tc.expCode), db.GetCodeSize(address))
 			suite.Require().Equal(tc.expCodeHash, db.GetCodeHash(address))
@@ -390,8 +379,7 @@ func (suite *StateDBTestSuite) TestRevertSnapshot() {
 
 			{
 				// do some arbitrary changes to the storage
-				db, err := statedb.New(ctx, keeper, emptyTxConfig)
-				suite.Require().NoError(err)
+				db := statedb.New(ctx, keeper, emptyTxConfig)
 				db.SetNonce(address, 1)
 				db.AddBalance(address, big.NewInt(100))
 				db.SetCode(address, []byte("hello world"))
@@ -404,8 +392,7 @@ func (suite *StateDBTestSuite) TestRevertSnapshot() {
 			ctx, keeper = newTestKeeper(suite.T(), raw)
 
 			// run test
-			db, err := statedb.New(ctx, keeper, emptyTxConfig)
-			suite.Require().NoError(err)
+			db := statedb.New(ctx, keeper, emptyTxConfig)
 			rev := db.Snapshot()
 			tc.malleate(db)
 			db.RevertToSnapshot(rev)
@@ -429,8 +416,7 @@ func (suite *StateDBTestSuite) TestNestedSnapshot() {
 	value2 := common.BigToHash(big.NewInt(2))
 
 	_, ctx, keeper := setupTestEnv(suite.T())
-	db, err := statedb.New(ctx, keeper, emptyTxConfig)
-	suite.Require().NoError(err)
+	db := statedb.New(ctx, keeper, emptyTxConfig)
 
 	rev1 := db.Snapshot()
 	db.SetState(address, key, value1)
@@ -448,8 +434,7 @@ func (suite *StateDBTestSuite) TestNestedSnapshot() {
 
 func (suite *StateDBTestSuite) TestInvalidSnapshotId() {
 	_, ctx, keeper := setupTestEnv(suite.T())
-	db, err := statedb.New(ctx, keeper, emptyTxConfig)
-	suite.Require().NoError(err)
+	db := statedb.New(ctx, keeper, emptyTxConfig)
 	suite.Require().Panics(func() {
 		db.RevertToSnapshot(1)
 	})
@@ -501,8 +486,7 @@ func (suite *StateDBTestSuite) TestAccessList() {
 
 	for _, tc := range testCases {
 		_, ctx, keeper := setupTestEnv(suite.T())
-		db, err := statedb.New(ctx, keeper, emptyTxConfig)
-		suite.Require().NoError(err)
+		db := statedb.New(ctx, keeper, emptyTxConfig)
 		tc.malleate(db)
 	}
 }
@@ -516,8 +500,7 @@ func (suite *StateDBTestSuite) TestLog() {
 		1, 1,
 	)
 	_, ctx, keeper := setupTestEnv(suite.T())
-	db, err := statedb.New(ctx, keeper, txConfig)
-	suite.Require().NoError(err)
+	db := statedb.New(ctx, keeper, txConfig)
 	data := []byte("hello world")
 	db.AddLog(&ethtypes.Log{
 		Address:     address,
@@ -570,8 +553,7 @@ func (suite *StateDBTestSuite) TestRefund() {
 	}
 	for _, tc := range testCases {
 		_, ctx, keeper := setupTestEnv(suite.T())
-		db, err := statedb.New(ctx, keeper, emptyTxConfig)
-		suite.Require().NoError(err)
+		db := statedb.New(ctx, keeper, emptyTxConfig)
 		if !tc.expPanic {
 			tc.malleate(db)
 			suite.Require().Equal(tc.expRefund, db.GetRefund())
@@ -590,8 +572,7 @@ func (suite *StateDBTestSuite) TestIterateStorage() {
 	value2 := common.BigToHash(big.NewInt(4))
 
 	raw, ctx, keeper := setupTestEnv(suite.T())
-	db, err := statedb.New(ctx, keeper, emptyTxConfig)
-	suite.Require().NoError(err)
+	db := statedb.New(ctx, keeper, emptyTxConfig)
 	db.SetState(address, key1, value1)
 	db.SetState(address, key2, value2)
 
@@ -640,8 +621,7 @@ func (suite *StateDBTestSuite) TestNativeAction() {
 		return converter(event)
 	}
 
-	stateDB, err := statedb.New(ctx, keeper, emptyTxConfig)
-	suite.Require().NoError(err)
+	stateDB := statedb.New(ctx, keeper, emptyTxConfig)
 	contract := common.BigToAddress(big.NewInt(101))
 
 	stateDB.ExecuteNativeAction(contract, eventConverter, func(ctx sdk.Context) error {
@@ -715,6 +695,7 @@ func (suite *StateDBTestSuite) TestNativeAction() {
 		TxHash:    emptyTxConfig.TxHash,
 		Data:      []byte("success2"),
 	}}, stateDB.Logs())
+
 	// test query
 	stateDB.ExecuteNativeAction(contract, nil, func(ctx sdk.Context) error {
 		store := ctx.KVStore(storeKey)
@@ -726,34 +707,34 @@ func (suite *StateDBTestSuite) TestNativeAction() {
 
 	stateDB.RevertToSnapshot(rev1)
 
-	// // check events
-	// suite.Require().Equal(sdk.Events{{Type: "success1"}}, stateDB.NativeEvents())
-	// suite.Require().Equal([]*ethtypes.Log{{
-	// 	Address:   contract,
-	// 	BlockHash: emptyTxConfig.BlockHash,
-	// 	TxHash:    emptyTxConfig.TxHash,
-	// 	Data:      []byte("success1"),
-	// }}, stateDB.Logs())
+	// check events
+	suite.Require().Equal(sdk.Events{{Type: "success1"}}, stateDB.NativeEvents())
+	suite.Require().Equal([]*ethtypes.Log{{
+		Address:   contract,
+		BlockHash: emptyTxConfig.BlockHash,
+		TxHash:    emptyTxConfig.TxHash,
+		Data:      []byte("success1"),
+	}}, stateDB.Logs())
 
-	// _ = stateDB.Snapshot()
-	// stateDB.ExecuteNativeAction(contract, eventConverter, func(ctx sdk.Context) error {
-	// 	store := ctx.KVStore(storeKey)
-	// 	store.Set([]byte("success3"), []byte("value"))
-	// 	ctx.EventManager().EmitEvent(sdk.NewEvent("success3"))
-	// 	return nil
-	// })
+	_ = stateDB.Snapshot()
+	stateDB.ExecuteNativeAction(contract, eventConverter, func(ctx sdk.Context) error {
+		store := ctx.KVStore(storeKey)
+		store.Set([]byte("success3"), []byte("value"))
+		ctx.EventManager().EmitEvent(sdk.NewEvent("success3"))
+		return nil
+	})
 
-	// // check events
-	// suite.Require().Equal(sdk.Events{{Type: "success1"}, {Type: "success3"}}, stateDB.NativeEvents())
+	// check events
+	suite.Require().Equal(sdk.Events{{Type: "success1"}, {Type: "success3"}}, stateDB.NativeEvents())
 
-	// // test query
-	// stateDB.ExecuteNativeAction(contract, eventConverter, func(ctx sdk.Context) error {
-	// 	store := ctx.KVStore(storeKey)
-	// 	suite.Require().Equal([]byte("value"), store.Get([]byte("success1")))
-	// 	suite.Require().Nil(store.Get([]byte("success2")))
-	// 	suite.Require().Equal([]byte("value"), store.Get([]byte("success3")))
-	// 	return nil
-	// })
+	// test query
+	stateDB.ExecuteNativeAction(contract, eventConverter, func(ctx sdk.Context) error {
+		store := ctx.KVStore(storeKey)
+		suite.Require().Equal([]byte("value"), store.Get([]byte("success1")))
+		suite.Require().Nil(store.Get([]byte("success2")))
+		suite.Require().Equal([]byte("value"), store.Get([]byte("success3")))
+		return nil
+	})
 
 	suite.Require().NoError(stateDB.Commit())
 
@@ -761,13 +742,12 @@ func (suite *StateDBTestSuite) TestNativeAction() {
 	store := ctx.KVStore(storeKey)
 	suite.Require().Equal([]byte("value"), store.Get([]byte("success1")))
 	suite.Require().Nil(store.Get([]byte("success2")))
-	// suite.Require().Equal([]byte("value"), store.Get([]byte("success3")))
+	suite.Require().Equal([]byte("value"), store.Get([]byte("success3")))
 	suite.Require().Nil(store.Get([]byte("failure1")))
 	suite.Require().Nil(store.Get([]byte("failure2")))
 
 	// check events
-	// suite.Require().Equal(sdk.Events{{Type: "success1"}, {Type: "success3"}}, ctx.EventManager().Events())
-	suite.Require().Equal(sdk.Events{{Type: "success1"}}, ctx.EventManager().Events())
+	suite.Require().Equal(sdk.Events{{Type: "success1"}, {Type: "success3"}}, ctx.EventManager().Events())
 }
 
 func CollectContractStorage(db vm.StateDB) statedb.Storage {

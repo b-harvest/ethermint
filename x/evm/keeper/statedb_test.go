@@ -715,12 +715,11 @@ func (suite *KeeperTestSuite) TestAddLog() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
-			vmdb, err := statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewTxConfig(
+			vmdb := statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewTxConfig(
 				common.BytesToHash(suite.ctx.HeaderHash()),
 				tc.hash,
 				0, 0,
 			))
-			suite.Require().NoError(err)
 			tc.malleate(vmdb)
 
 			vmdb.AddLog(tc.log)

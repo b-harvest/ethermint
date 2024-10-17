@@ -16,7 +16,6 @@
 package statedb
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -24,7 +23,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store/cachemulti"
-	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -33,6 +31,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 )
+
+const StateDBContextKey = "statedb"
 
 type EventConverter = func(sdk.Event) (*ethtypes.Log, error)
 
@@ -56,6 +56,7 @@ type StateDB struct {
 	ctx    sdk.Context
 
 	cacheCtx   sdk.Context
+	cacheMS    cachemulti.Store
 	writeCache func()
 
 	// Journal of state modifications. This is the backbone of
@@ -86,7 +87,7 @@ type StateDB struct {
 }
 
 // New creates a new state from a given trie.
-func New(ctx sdk.Context, keeper Keeper, txConfig TxConfig) (*StateDB, error) {
+func New(ctx sdk.Context, keeper Keeper, txConfig TxConfig) *StateDB {
 	db := &StateDB{
 		keeper:       keeper,
 		ctx:          ctx,
@@ -95,13 +96,23 @@ func New(ctx sdk.Context, keeper Keeper, txConfig TxConfig) (*StateDB, error) {
 		accessList:   newAccessList(),
 
 		txConfig: txConfig,
-
-		evmDenom: keeper.GetParams(ctx).EvmDenom,
 	}
-	// init cache context
-	_, err := db.GetCacheContext()
 
-	return db, err
+	if parentCacheMS, ok := ctx.MultiStore().(cachemulti.Store); ok {
+		db.cacheMS = parentCacheMS.Clone()
+		db.writeCache = func() { parentCacheMS.Restore(db.cacheMS) }
+	} else {
+		// in unit test, it could be run with a uncached multistore
+		if db.cacheMS, ok = ctx.MultiStore().CacheWrap().(cachemulti.Store); !ok {
+			panic("expect the CacheWrap result to be cachemulti.Store")
+		}
+		db.writeCache = db.cacheMS.Write
+	}
+	db.cacheCtx = ctx.WithValue(StateDBContextKey, db).WithMultiStore(db.cacheMS)
+
+	db.evmDenom = keeper.GetParams(ctx).EvmDenom
+
+	return db
 }
 
 func (s *StateDB) NativeEvents() sdk.Events {
@@ -249,7 +260,7 @@ func (s *StateDB) getStateObject(addr common.Address) *stateObject {
 		return obj
 	}
 	// If no live objects are available, load it from keeper
-	account := s.keeper.GetAccount(s.ctx, addr)
+	account := s.keeper.GetAccount(s.cacheCtx, addr)
 	if account == nil {
 		return nil
 	}
@@ -322,29 +333,15 @@ func (s *StateDB) setStateObject(object *stateObject) {
 	s.stateObjects[object.Address()] = object
 }
 
-func (s *StateDB) GetCacheContext() (sdk.Context, error) {
-	if s.writeCache == nil {
-		if s.ctx.MultiStore() == nil {
-			return s.ctx, errors.New("ctx has no multi store")
-		}
-		s.cacheCtx, s.writeCache = s.ctx.CacheContext()
-	}
-
-	return s.cacheCtx, nil
+func (s *StateDB) GetCacheContext() sdk.Context {
+	return s.cacheCtx
 }
 
-func (s *StateDB) MultiStoreSnapshot() (cachemulti.Store, error) {
-	ctx, err := s.GetCacheContext()
-	if err != nil { // means s.ctx.MultiStore() == nil
-		return cachemulti.Store{}, err
-	}
-
-	cms := ctx.MultiStore().(cachemulti.Store)
-	snapshot := cms.Clone()
-	return snapshot, nil
+func (s *StateDB) MultiStoreSnapshot() cachemulti.Store {
+	return s.cacheMS.Clone()
 }
 
-func (s *StateDB) ProcessSDKEvents(contract common.Address, events sdk.Events, converter EventConverter) {
+func (s *StateDB) emitNativeEvents(contract common.Address, events sdk.Events, converter EventConverter) {
 	if converter == nil {
 		return
 	}
@@ -369,38 +366,22 @@ func (s *StateDB) ProcessSDKEvents(contract common.Address, events sdk.Events, c
 	}
 }
 
-// If revert is occurred, the snapshot of journal is overwritten.
-func (s *StateDB) AddPrecompileSnapshot(snapshot storetypes.MultiStore, events sdk.Events) {
-	s.journal.append(precompileChange{snapshot, events})
-}
-
 // ExecuteNativeAction executes native action in isolate,
 // the writes will be revert when either the native action itself fail
 // or the wrapping message call reverted.
 func (s *StateDB) ExecuteNativeAction(contract common.Address, converter EventConverter, action func(ctx sdk.Context) error) error {
-	snapshot, err := s.MultiStoreSnapshot()
-	if err != nil {
-		return err
-	}
-
-	tmpCacheCtx, tmpWriteCache := s.cacheCtx.CacheContext()
+	snapshot := s.MultiStoreSnapshot()
 	eventManager := sdk.NewEventManager()
-	if err := action(tmpCacheCtx.WithEventManager(eventManager)); err != nil {
+
+	if err := action(s.cacheCtx.WithEventManager(eventManager)); err != nil {
+		s.cacheMS.Restore(snapshot)
 		return err
 	}
-	tmpWriteCache()
-
-	// if err := action(s.cacheCtx.WithEventManager(eventManager)); err != nil {
-	// 	// TODO(dudong2): need to revert to snapshot?
-	// 	s.cacheCtx.MultiStore().(cachemulti.Store).Restore(snapshot)
-	// 	// s.revertNativeStateToSnapshot(snapshot)
-	// 	return err
-	// }
 
 	events := eventManager.Events()
-	s.ProcessSDKEvents(contract, events, converter)
+	s.emitNativeEvents(contract, events, converter)
 	s.nativeEvents = s.nativeEvents.AppendEvents(events)
-	s.journal.append(nativeChange{ms: snapshot, es: len(events)})
+	s.journal.append(nativeChange{snapshot: snapshot, events: len(events)})
 	return nil
 }
 
@@ -611,9 +592,9 @@ func (s *StateDB) Commit() error {
 		return s.err
 	}
 
-	// write all store updates from precompile
-	if s.writeCache != nil {
-		s.writeCache()
+	s.writeCache()
+	if len(s.nativeEvents) > 0 {
+		s.ctx.EventManager().EmitEvents(s.nativeEvents)
 	}
 
 	for _, addr := range s.journal.sortedDirties() {

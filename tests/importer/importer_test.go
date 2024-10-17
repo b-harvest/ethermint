@@ -142,8 +142,7 @@ func (suite *ImporterTestSuite) TestImportBlocks() {
 		suite.Require().NoError(err)
 		ctx := suite.app.NewContextLegacy(false, tmheader)
 		ctx = ctx.WithBlockHeight(tmheader.Height)
-		vmdb, err := statedb.New(ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash())))
-		suite.Require().NoError(err)
+		vmdb := statedb.New(ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash())))
 
 		if chainConfig.DAOForkSupport && chainConfig.DAOForkBlock != nil && chainConfig.DAOForkBlock.Cmp(block.Number()) == 0 {
 			applyDAOHardFork(vmdb)
