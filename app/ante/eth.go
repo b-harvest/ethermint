@@ -88,13 +88,14 @@ func (avd EthAccountVerificationDecorator) AnteHandle(
 		if acct == nil {
 			acc := avd.ak.NewAccountWithAddress(ctx, from)
 			avd.ak.SetAccount(ctx, acc)
-			acct = statedb.NewEmptyAccount()
 		} else if acct.IsContract() {
 			return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType,
 				"the sender is not EOA: address %s, codeHash <%s>", fromAddr, acct.CodeHash)
 		}
 
-		if err := keeper.CheckSenderBalance(sdkmath.NewIntFromBigInt(acct.Balance), txData); err != nil {
+		params := avd.evmKeeper.GetParams(ctx)
+		balance := avd.evmKeeper.GetBalance(ctx, from, params.EvmDenom)
+		if err := keeper.CheckSenderBalance(sdkmath.NewIntFromBigInt(balance), txData); err != nil {
 			return ctx, errorsmod.Wrap(err, "failed to check sender balance")
 		}
 	}
@@ -302,7 +303,10 @@ func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 			BaseFee:     baseFee,
 		}
 
-		stateDB := statedb.New(ctx, ctd.evmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash())))
+		stateDB, err := statedb.New(ctx, ctd.evmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash())))
+		if err != nil {
+			return ctx, errorsmod.Wrap(err, "failed to create new stateDB")
+		}
 		evm := ctd.evmKeeper.NewEVM(ctx, coreMsg, cfg, evmtypes.NewNoOpTracer(), stateDB)
 
 		// check that caller has enough balance to cover asset transfer for **topmost** call

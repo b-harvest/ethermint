@@ -64,23 +64,27 @@ func (suite *KeeperTestSuite) TestCreateAccount() {
 
 func (suite *KeeperTestSuite) TestAddBalance() {
 	testCases := []struct {
-		name   string
-		amount *big.Int
-		isNoOp bool
+		name    string
+		amount  *big.Int
+		isPanic bool
+		isNoOp  bool
 	}{
 		{
 			"positive amount",
 			big.NewInt(100),
 			false,
+			false,
 		},
 		{
 			"zero amount",
 			big.NewInt(0),
+			false,
 			true,
 		},
 		{
 			"negative amount",
 			big.NewInt(-1),
+			true,
 			false, // seems to be consistent with go-ethereum's implementation
 		},
 	}
@@ -89,13 +93,16 @@ func (suite *KeeperTestSuite) TestAddBalance() {
 		suite.Run(tc.name, func() {
 			vmdb := suite.StateDB()
 			prev := vmdb.GetBalance(suite.address)
-			vmdb.AddBalance(suite.address, tc.amount)
-			post := vmdb.GetBalance(suite.address)
-
-			if tc.isNoOp {
-				suite.Require().Equal(prev.Int64(), post.Int64())
+			if tc.isPanic {
+				suite.Require().Panics(func() { vmdb.AddBalance(suite.address, tc.amount) })
 			} else {
-				suite.Require().Equal(new(big.Int).Add(prev, tc.amount).Int64(), post.Int64())
+				vmdb.AddBalance(suite.address, tc.amount)
+				post := vmdb.GetBalance(suite.address)
+				if tc.isNoOp {
+					suite.Require().Equal(prev.Int64(), post.Int64())
+				} else {
+					suite.Require().Equal(new(big.Int).Add(prev, tc.amount).Int64(), post.Int64())
+				}
 			}
 		})
 	}
@@ -106,6 +113,7 @@ func (suite *KeeperTestSuite) TestSubBalance() {
 		name     string
 		amount   *big.Int
 		malleate func(vm.StateDB)
+		isPanic  bool
 		isNoOp   bool
 	}{
 		{
@@ -113,6 +121,7 @@ func (suite *KeeperTestSuite) TestSubBalance() {
 			big.NewInt(100),
 			func(vm.StateDB) {},
 			false,
+			true,
 		},
 		{
 			"positive amount, above zero",
@@ -121,17 +130,20 @@ func (suite *KeeperTestSuite) TestSubBalance() {
 				vmdb.AddBalance(suite.address, big.NewInt(100))
 			},
 			false,
+			false,
 		},
 		{
 			"zero amount",
 			big.NewInt(0),
 			func(vm.StateDB) {},
+			false,
 			true,
 		},
 		{
 			"negative amount",
 			big.NewInt(-1),
 			func(vm.StateDB) {},
+			true,
 			false,
 		},
 	}
@@ -142,13 +154,16 @@ func (suite *KeeperTestSuite) TestSubBalance() {
 			tc.malleate(vmdb)
 
 			prev := vmdb.GetBalance(suite.address)
-			vmdb.SubBalance(suite.address, tc.amount)
-			post := vmdb.GetBalance(suite.address)
-
-			if tc.isNoOp {
-				suite.Require().Equal(prev.Int64(), post.Int64())
+			if tc.isPanic {
+				suite.Require().Panics(func() { vmdb.SubBalance(suite.address, tc.amount) })
 			} else {
-				suite.Require().Equal(new(big.Int).Sub(prev, tc.amount).Int64(), post.Int64())
+				vmdb.SubBalance(suite.address, tc.amount)
+				post := vmdb.GetBalance(suite.address)
+				if tc.isNoOp {
+					suite.Require().Equal(prev.Int64(), post.Int64())
+				} else {
+					suite.Require().Equal(new(big.Int).Sub(prev, tc.amount).Int64(), post.Int64())
+				}
 			}
 		})
 	}
@@ -700,11 +715,12 @@ func (suite *KeeperTestSuite) TestAddLog() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
-			vmdb := statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewTxConfig(
+			vmdb, err := statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewTxConfig(
 				common.BytesToHash(suite.ctx.HeaderHash()),
 				tc.hash,
 				0, 0,
 			))
+			suite.Require().NoError(err)
 			tc.malleate(vmdb)
 
 			vmdb.AddLog(tc.log)
@@ -899,11 +915,11 @@ func (suite *KeeperTestSuite) TestSetBalance() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 			tc.malleate()
-			err := suite.app.EvmKeeper.SetBalance(suite.ctx, tc.addr, amount)
+			err := suite.app.EvmKeeper.SetBalance(suite.ctx, tc.addr, amount, types.DefaultEVMDenom)
 			if tc.expErr {
 				suite.Require().Error(err)
 			} else {
-				balance := suite.app.EvmKeeper.GetBalance(suite.ctx, tc.addr)
+				balance := suite.app.EvmKeeper.GetEVMDenomBalance(suite.ctx, tc.addr)
 				suite.Require().NoError(err)
 				suite.Require().Equal(amount, balance)
 			}
@@ -945,7 +961,7 @@ func (suite *KeeperTestSuite) TestDeleteAccount() {
 				suite.Require().Error(err)
 			} else {
 				suite.Require().NoError(err)
-				balance := suite.app.EvmKeeper.GetBalance(suite.ctx, tc.addr)
+				balance := suite.app.EvmKeeper.GetEVMDenomBalance(suite.ctx, tc.addr)
 				suite.Require().Equal(new(big.Int), balance)
 			}
 		})

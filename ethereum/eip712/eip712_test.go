@@ -6,43 +6,39 @@ import (
 	"fmt"
 	"testing"
 
-	"cosmossdk.io/math"
-	"google.golang.org/protobuf/types/known/anypb"
-
-	chainparams "cosmossdk.io/simapp/params"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/evmos/ethermint/ethereum/eip712"
+	"github.com/stretchr/testify/suite"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"google.golang.org/protobuf/types/known/anypb"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
+	"cosmossdk.io/math"
+	chainparams "cosmossdk.io/simapp/params"
 	txsigning "cosmossdk.io/x/tx/signing"
+
+	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	"github.com/evmos/ethermint/cmd/config"
-	"github.com/evmos/ethermint/encoding"
-	"github.com/evmos/ethermint/testutil"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
-	"github.com/cosmos/cosmos-sdk/x/bank"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/stretchr/testify/suite"
+
+	"github.com/evmos/ethermint/cmd/config"
+	"github.com/evmos/ethermint/crypto/ethsecp256k1"
+	"github.com/evmos/ethermint/ethereum/eip712"
+	"github.com/evmos/ethermint/testutil"
+	testutilconfig "github.com/evmos/ethermint/testutil/config"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
 // Unit tests for single-signer EIP-712 signature verification. Multi-signature key verification tests are out-of-scope
@@ -79,7 +75,7 @@ func TestEIP712TestSuite(t *testing.T) {
 }
 
 func (suite *EIP712TestSuite) SetupTest() {
-	suite.config = encoding.MakeTestEncodingConfig(bank.AppModuleBasic{}, distribution.AppModuleBasic{}, gov.AppModuleBasic{}, staking.AppModuleBasic{})
+	suite.config = testutilconfig.MakeConfigForTest(nil)
 	suite.clientCtx = client.Context{}.WithTxConfig(suite.config.TxConfig)
 	suite.denom = evmtypes.DefaultEVMDenom
 

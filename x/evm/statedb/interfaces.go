@@ -16,9 +16,12 @@
 package statedb
 
 import (
+	"math/big"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
 // ExtStateDB defines an extension to the interface provided by the go-ethereum
@@ -33,6 +36,14 @@ type ExtStateDB interface {
 
 // Keeper provide underlying storage of StateDB
 type Keeper interface {
+	GetParams(sdk.Context) evmtypes.Params
+
+	Transfer(ctx sdk.Context, sender, recipient sdk.AccAddress, coins sdk.Coins) error
+	AddBalance(ctx sdk.Context, addr sdk.AccAddress, coins sdk.Coins) error
+	SubBalance(ctx sdk.Context, addr sdk.AccAddress, coins sdk.Coins) error
+	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) *big.Int
+	SetBalance(ctx sdk.Context, addr common.Address, amount *big.Int, denom string) error
+
 	// Read methods
 	GetAccount(ctx sdk.Context, addr common.Address) *Account
 	GetState(ctx sdk.Context, addr common.Address, key common.Hash) common.Hash

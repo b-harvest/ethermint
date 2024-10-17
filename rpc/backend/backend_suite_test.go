@@ -7,15 +7,19 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
+	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
+
 	dbm "github.com/cosmos/cosmos-db"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/evmos/ethermint/crypto/hd"
@@ -24,7 +28,7 @@ import (
 	"github.com/evmos/ethermint/rpc/backend/mocks"
 	rpctypes "github.com/evmos/ethermint/rpc/types"
 	"github.com/evmos/ethermint/tests"
-	"github.com/evmos/ethermint/x/evm"
+	"github.com/evmos/ethermint/testutil/config"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
@@ -67,7 +71,7 @@ func (suite *BackendTestSuite) SetupTest() {
 	suite.signer = tests.NewSigner(priv)
 	suite.Require().NoError(err)
 
-	encodingConfig := encoding.MakeTestEncodingConfig(evm.AppModuleBasic{})
+	encodingConfig := config.MakeConfigForTest(nil)
 	clientCtx := client.Context{}.WithChainID(ChainID).
 		WithHeight(1).
 		WithTxConfig(encodingConfig.TxConfig).

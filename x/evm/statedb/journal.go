@@ -18,7 +18,6 @@ package statedb
 
 import (
 	"bytes"
-	"math/big"
 	"sort"
 
 	storetypes "cosmossdk.io/store/types"
@@ -106,16 +105,10 @@ type (
 		prev *stateObject
 	}
 	suicideChange struct {
-		account     *common.Address
-		prev        bool // whether account had already suicided
-		prevbalance *big.Int
+		account *common.Address
+		prev    bool // whether account had already suicided
 	}
 
-	// Changes to individual accounts.
-	balanceChange struct {
-		account *common.Address
-		prev    *big.Int
-	}
 	nonceChange struct {
 		account *common.Address
 		prev    uint64
@@ -148,6 +141,11 @@ type (
 		ms storetypes.MultiStore
 		es sdk.Events
 	}
+
+	nativeChange struct {
+		ms storetypes.MultiStore
+		es int
+	}
 )
 
 func (ch createObjectChange) Revert(s *StateDB) {
@@ -170,19 +168,10 @@ func (ch suicideChange) Revert(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.prev
-		obj.setBalance(ch.prevbalance)
 	}
 }
 
 func (ch suicideChange) Dirtied() *common.Address {
-	return ch.account
-}
-
-func (ch balanceChange) Revert(s *StateDB) {
-	s.getStateObject(*ch.account).setBalance(ch.prev)
-}
-
-func (ch balanceChange) Dirtied() *common.Address {
 	return ch.account
 }
 
@@ -262,5 +251,19 @@ func (ch precompileChange) Revert(s *StateDB) {
 }
 
 func (ch precompileChange) Dirtied() *common.Address {
+	return nil
+}
+
+func (ch nativeChange) Revert(s *StateDB) {
+	s.cacheCtx = s.cacheCtx.WithMultiStore(ch.ms)
+
+	// Necessary to revert the sdk state
+	s.writeCache = func() {
+		s.nativeEvents = s.nativeEvents[:len(s.nativeEvents)-ch.es]
+		ch.ms.CacheMultiStore().Write()
+	}
+}
+
+func (ch nativeChange) Dirtied() *common.Address {
 	return nil
 }
