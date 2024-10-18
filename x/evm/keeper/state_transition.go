@@ -166,11 +166,6 @@ func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
 //
 // For relevant discussion see: https://github.com/cosmos/cosmos-sdk/discussions/9072
 func (k *Keeper) ApplyTransaction(ctx sdk.Context, msgEth *types.MsgEthereumTx) (*types.MsgEthereumTxResponse, error) {
-	var (
-		bloom        *big.Int
-		bloomReceipt ethtypes.Bloom
-	)
-
 	cfg, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
@@ -204,9 +199,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, msgEth *types.MsgEthereumTx) 
 
 	// Compute block bloom filter
 	if len(logs) > 0 {
-		bloom = k.GetBlockBloomTransient(ctx)
-		bloom.Or(bloom, big.NewInt(0).SetBytes(ethtypes.LogsBloom(logs)))
-		bloomReceipt = ethtypes.BytesToBloom(bloom.Bytes())
+		k.SetTxBloom(tmpCtx, new(big.Int).SetBytes(ethtypes.LogsBloom(logs)))
 	}
 
 	var contractAddr common.Address
@@ -215,16 +208,14 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, msgEth *types.MsgEthereumTx) 
 	}
 
 	receipt := &ethtypes.Receipt{
-		Type:             ethTx.Type(),
-		PostState:        nil, // TODO: intermediate state root
-		Bloom:            bloomReceipt,
-		Logs:             logs,
-		TxHash:           txConfig.TxHash,
-		ContractAddress:  contractAddr,
-		GasUsed:          res.GasUsed,
-		BlockHash:        txConfig.BlockHash,
-		BlockNumber:      big.NewInt(ctx.BlockHeight()),
-		TransactionIndex: txConfig.TxIndex,
+		Type:            ethTx.Type(),
+		PostState:       nil, // TODO: intermediate state root
+		Logs:            logs,
+		TxHash:          txConfig.TxHash,
+		ContractAddress: contractAddr,
+		GasUsed:         res.GasUsed,
+		BlockHash:       txConfig.BlockHash,
+		BlockNumber:     big.NewInt(ctx.BlockHeight()),
 	}
 
 	if !res.Failed() {
@@ -250,14 +241,6 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, msgEth *types.MsgEthereumTx) 
 	if err = k.RefundGas(ctx, msg, msg.Gas()-res.GasUsed, cfg.Params.EvmDenom); err != nil {
 		return nil, errorsmod.Wrapf(err, "failed to refund gas leftover gas to sender %s", msg.From())
 	}
-
-	if len(receipt.Logs) > 0 {
-		// Update transient block bloom filter
-		k.SetBlockBloomTransient(ctx, receipt.Bloom.Big())
-		k.SetLogSizeTransient(ctx, uint64(txConfig.LogIndex)+uint64(len(receipt.Logs)))
-	}
-
-	k.SetTxIndexTransient(ctx, uint64(txConfig.TxIndex)+1)
 
 	totalGasUsed, err := k.AddTransientGasUsed(ctx, res.GasUsed)
 	if err != nil {

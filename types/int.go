@@ -36,6 +36,13 @@ func SafeInt64(value uint64) (int64, error) {
 	return int64(value), nil //#nosec G115
 }
 
+func SafeIntToUint64(value int) (uint64, error) {
+	if value < 0 {
+		return 0, fmt.Errorf("invalid value: %d", value)
+	}
+	return uint64(value), nil
+}
+
 // SafeNewIntFromBigInt constructs Int from big.Int, return error if more than 256bits
 func SafeNewIntFromBigInt(i *big.Int) (sdkmath.Int, error) {
 	if !IsValidInt256(i) {

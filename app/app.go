@@ -330,9 +330,9 @@ func NewEthermintApp(
 	}
 
 	// Add the EVM transient store key
-	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
+	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
-	okeys := storetypes.NewObjectStoreKeys(banktypes.ObjectStoreKey)
+	okeys := storetypes.NewObjectStoreKeys(banktypes.ObjectStoreKey, evmtypes.ObjectStoreKey)
 	app := &EthermintApp{
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
@@ -576,7 +576,7 @@ func NewEthermintApp(
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[evmtypes.StoreKey]),
-		tkeys[evmtypes.TransientKey],
+		okeys[evmtypes.ObjectStoreKey],
 		authtypes.NewModuleAddress(govtypes.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,
