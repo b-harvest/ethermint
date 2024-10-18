@@ -44,6 +44,10 @@ type revision struct {
 	journalIndex int
 }
 
+func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
+	db.(*StateDB).Transfer(sender, recipient, amount)
+}
+
 var _ vm.StateDB = &StateDB{}
 
 // StateDB structs within the ethereum protocol are used to store anything
