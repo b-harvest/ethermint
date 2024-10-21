@@ -24,8 +24,20 @@ func (w cometABCIWrapper) Query(ctx context.Context, req *abci.RequestQuery) (*a
 	return w.app.Query(ctx, req)
 }
 
-func (w cometABCIWrapper) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-	return w.app.CheckTx(req)
+func (w cometABCIWrapper) CheckTxSyncForApp(_ context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+	return w.app.CheckTxSync(req)
+}
+
+func (w cometABCIWrapper) CheckTxAsyncForApp(_ context.Context, req *abci.RequestCheckTx, cb abci.CheckTxCallback) {
+	w.app.CheckTxAsync(req, cb)
+}
+
+func (w cometABCIWrapper) BeginRecheckTx(_ context.Context, req *abci.RequestBeginRecheckTx) (*abci.ResponseBeginRecheckTx, error) {
+	return w.app.BeginRecheckTx(req)
+}
+
+func (w cometABCIWrapper) EndRecheckTx(_ context.Context, req *abci.RequestEndRecheckTx) (*abci.ResponseEndRecheckTx, error) {
+	return w.app.EndRecheckTx(req)
 }
 
 func (w cometABCIWrapper) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
