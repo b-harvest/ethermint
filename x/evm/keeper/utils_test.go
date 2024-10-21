@@ -233,13 +233,13 @@ func (suite *KeeperTestSuite) TestCheckSenderBalance() {
 			}
 
 			tx := evmtypes.NewTx(zeroInt.BigInt(), 1, &to, amount, tc.gasLimit, gasPrice, gasFeeCap, gasTipCap, nil, tc.accessList)
-			tx.From = tc.from
+			tx.From = common.HexToAddress(tc.from).Bytes()
 
 			txData, _ := evmtypes.UnpackTxData(tx.Data)
 
-			acct := suite.app.EvmKeeper.GetAccountOrEmpty(suite.ctx, suite.address)
+			balance := suite.app.EvmKeeper.GetEVMDenomBalance(suite.ctx, suite.address)
 			err := keeper.CheckSenderBalance(
-				sdkmath.NewIntFromBigInt(acct.Balance),
+				sdkmath.NewIntFromBigInt(balance),
 				txData,
 			)
 
@@ -471,7 +471,7 @@ func (suite *KeeperTestSuite) TestVerifyFeeAndDeductTxCostsFromUserBalance() {
 			suite.Require().NoError(err, "Unexpected error while committing to vmdb: %d", err)
 
 			tx := evmtypes.NewTx(zeroInt.BigInt(), 1, &suite.address, amount, tc.gasLimit, gasPrice, gasFeeCap, gasTipCap, nil, tc.accessList)
-			tx.From = tc.from
+			tx.From = common.HexToAddress(tc.from).Bytes()
 
 			txData, _ := evmtypes.UnpackTxData(tx.Data)
 
@@ -507,7 +507,7 @@ func (suite *KeeperTestSuite) TestVerifyFeeAndDeductTxCostsFromUserBalance() {
 				suite.Require().Nil(fees, "invalid test %d passed. fees value must be nil - '%s'", i, tc.name)
 			}
 
-			err = suite.app.EvmKeeper.DeductTxCostsFromUserBalance(suite.ctx, fees, common.HexToAddress(tx.From))
+			err = suite.app.EvmKeeper.DeductTxCostsFromUserBalance(suite.ctx, fees, common.BytesToAddress(tx.From))
 			if tc.expectPassDeduct {
 				suite.Require().NoError(err, "valid test %d failed - '%s'", i, tc.name)
 			} else {

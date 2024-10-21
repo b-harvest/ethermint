@@ -75,6 +75,10 @@ const (
 const (
 	EVMTracer         = "evm.tracer"
 	EVMMaxTxGasWanted = "evm.max-tx-gas-wanted"
+
+	EVMBlockExecutor       = "evm.block-executor"
+	EVMBlockSTMWorkers     = "evm.block-stm-workers"
+	EVMBlockSTMPreEstimate = "evm.block-stm-pre-estimate"
 )
 
 // TLS flags

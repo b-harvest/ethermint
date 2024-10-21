@@ -24,8 +24,7 @@ func (suite *KeeperTestSuite) TestEndBlock() {
 			false,
 			func() {
 				meter := storetypes.NewGasMeter(uint64(1000000000))
-				suite.ctx = suite.ctx.WithBlockGasMeter(meter)
-				suite.app.FeeMarketKeeper.SetTransientBlockGasWanted(suite.ctx, 5000000)
+				suite.ctx = suite.ctx.WithBlockGasMeter(meter).WithBlockGasWanted(5000000)
 			},
 			uint64(2500000),
 		},

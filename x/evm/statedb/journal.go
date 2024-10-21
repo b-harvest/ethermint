@@ -18,12 +18,9 @@ package statedb
 
 import (
 	"bytes"
-	"math/big"
 	"sort"
 
-	storetypes "cosmossdk.io/store/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/store/cachemulti"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -106,16 +103,10 @@ type (
 		prev *stateObject
 	}
 	suicideChange struct {
-		account     *common.Address
-		prev        bool // whether account had already suicided
-		prevbalance *big.Int
+		account *common.Address
+		prev    bool // whether account had already suicided
 	}
 
-	// Changes to individual accounts.
-	balanceChange struct {
-		account *common.Address
-		prev    *big.Int
-	}
 	nonceChange struct {
 		account *common.Address
 		prev    uint64
@@ -144,9 +135,9 @@ type (
 		slot    *common.Hash
 	}
 
-	precompileChange struct {
-		ms storetypes.MultiStore
-		es sdk.Events
+	nativeChange struct {
+		snapshot cachemulti.Store
+		events   int // native events index
 	}
 )
 
@@ -170,19 +161,10 @@ func (ch suicideChange) Revert(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.prev
-		obj.setBalance(ch.prevbalance)
 	}
 }
 
 func (ch suicideChange) Dirtied() *common.Address {
-	return ch.account
-}
-
-func (ch balanceChange) Revert(s *StateDB) {
-	s.getStateObject(*ch.account).setBalance(ch.prev)
-}
-
-func (ch balanceChange) Dirtied() *common.Address {
 	return ch.account
 }
 
@@ -251,16 +233,11 @@ func (ch accessListAddSlotChange) Dirtied() *common.Address {
 	return nil
 }
 
-func (ch precompileChange) Revert(s *StateDB) {
-	s.cacheCtx = s.cacheCtx.WithMultiStore(ch.ms)
-
-	// Necessary to revert the sdk state
-	s.writeCache = func() {
-		s.cacheCtx.EventManager().EmitEvents(ch.es)
-		ch.ms.CacheMultiStore().Write()
-	}
+func (ch nativeChange) Revert(s *StateDB) {
+	s.cacheMS.Restore(ch.snapshot)
+	s.nativeEvents = s.nativeEvents[:len(s.nativeEvents)-ch.events]
 }
 
-func (ch precompileChange) Dirtied() *common.Address {
+func (ch nativeChange) Dirtied() *common.Address {
 	return nil
 }

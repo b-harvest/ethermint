@@ -32,7 +32,6 @@ import (
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/evmos/ethermint/server/config"
 	"github.com/evmos/ethermint/tests"
-	"github.com/evmos/ethermint/testutil"
 	ethermint "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm/statedb"
 	"github.com/evmos/ethermint/x/evm/types"
@@ -306,7 +305,7 @@ func (suite *KeeperTestSuite) DeployTestContract(t require.TestingT, owner commo
 		)
 	}
 
-	erc20DeployTx.From = suite.address.Hex()
+	erc20DeployTx.From = suite.address.Bytes()
 	err = erc20DeployTx.Sign(ethtypes.LatestSignerForChainID(chainID), suite.signer)
 	require.NoError(t, err)
 	rsp, err := suite.app.EvmKeeper.EthereumTx(suite.ctx, erc20DeployTx)
@@ -359,7 +358,7 @@ func (suite *KeeperTestSuite) TransferERC20Token(t require.TestingT, contractAdd
 		)
 	}
 
-	ercTransferTx.From = suite.address.Hex()
+	ercTransferTx.From = suite.address.Bytes()
 	err = ercTransferTx.Sign(ethtypes.LatestSignerForChainID(chainID), suite.signer)
 	require.NoError(t, err)
 	rsp, err := suite.app.EvmKeeper.EthereumTx(suite.ctx, ercTransferTx)
@@ -414,7 +413,7 @@ func (suite *KeeperTestSuite) DeployTestMessageCall(t require.TestingT) common.A
 		)
 	}
 
-	erc20DeployTx.From = suite.address.Hex()
+	erc20DeployTx.From = suite.address.Bytes()
 	err = erc20DeployTx.Sign(ethtypes.LatestSignerForChainID(chainID), suite.signer)
 	require.NoError(t, err)
 	rsp, err := suite.app.EvmKeeper.EthereumTx(suite.ctx, erc20DeployTx)
@@ -498,7 +497,6 @@ func (suite *KeeperTestSuite) TestGetAccountStorage() {
 
 func (suite *KeeperTestSuite) TestGetAccountOrEmpty() {
 	empty := statedb.Account{
-		Balance:  new(big.Int),
 		CodeHash: types.EmptyCodeHash,
 	}
 
@@ -532,59 +530,4 @@ func (suite *KeeperTestSuite) TestGetAccountOrEmpty() {
 			}
 		})
 	}
-}
-
-func (suite *KeeperTestSuite) TestRevertByPrecompileSnapshot() {
-	db := suite.StateDB()
-
-	// snapshot id for journal
-	rev := db.Snapshot()
-
-	ctx, err := db.GetCacheContext()
-	suite.NoError(err)
-
-	snapshotMultiStore, err := db.MultiStoreSnapshot()
-	suite.NoError(err)
-	snapshotEvents := suite.ctx.EventManager().Events()
-	db.AddPrecompileSnapshot(snapshotMultiStore, snapshotEvents)
-
-	// manipulate statedb(evm)
-	evmAddr, priv := tests.NewAddrKey()
-	key1 := common.BigToHash(big.NewInt(1))
-	value1 := common.BigToHash(big.NewInt(2))
-	key2 := common.BigToHash(big.NewInt(3))
-	value2 := common.BigToHash(big.NewInt(4))
-	db.SetState(evmAddr, key1, value1)
-	db.SetState(evmAddr, key2, value2)
-
-	suite.Equal(value1, db.GetState(evmAddr, key1))
-	suite.Equal(value2, db.GetState(evmAddr, key2))
-
-	// manipulate bank keeper(sdk)
-	addr1 := sdk.AccAddress(priv.PubKey().Address().Bytes())
-	denom := "testdenom"
-	testutil.FundAccount(suite.app.BankKeeper, ctx, addr1, sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(1000000))))
-	addr2 := sdk.AccAddress(tests.GenerateAddress().Bytes())
-	suite.app.BankKeeper.SendCoins(ctx, addr1, addr2, sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(1000))))
-
-	suite.Equal(sdk.NewCoin(denom, sdkmath.NewInt(999000)), suite.app.BankKeeper.GetBalance(ctx, addr1, denom))
-	suite.Equal(sdk.NewCoin(denom, sdkmath.NewInt(1000)), suite.app.BankKeeper.GetBalance(ctx, addr2, denom))
-
-	// revert to snapshot
-	db.RevertToSnapshot(rev)
-
-	suite.Equal(common.Hash{}, db.GetState(evmAddr, key1))
-	suite.Equal(common.Hash{}, db.GetState(evmAddr, key2))
-
-	suite.Equal(sdk.NewCoin(denom, sdkmath.NewInt(999000)), suite.app.BankKeeper.GetBalance(ctx, addr1, denom))
-	suite.Equal(sdk.NewCoin(denom, sdkmath.NewInt(1000)), suite.app.BankKeeper.GetBalance(ctx, addr2, denom))
-
-	// commit changes(revert sdk state)
-	db.Commit()
-
-	suite.Equal(common.Hash{}, db.GetState(evmAddr, key1))
-	suite.Equal(common.Hash{}, db.GetState(evmAddr, key2))
-
-	suite.Equal(sdk.NewCoin(denom, sdkmath.ZeroInt()), suite.app.BankKeeper.GetBalance(suite.ctx, addr1, denom))
-	suite.Equal(sdk.NewCoin(denom, sdkmath.ZeroInt()), suite.app.BankKeeper.GetBalance(suite.ctx, addr2, denom))
 }

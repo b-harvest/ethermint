@@ -7,15 +7,19 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
+	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
+
 	dbm "github.com/cosmos/cosmos-db"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/evmos/ethermint/crypto/hd"
@@ -24,15 +28,16 @@ import (
 	"github.com/evmos/ethermint/rpc/backend/mocks"
 	rpctypes "github.com/evmos/ethermint/rpc/types"
 	"github.com/evmos/ethermint/tests"
-	"github.com/evmos/ethermint/x/evm"
+	"github.com/evmos/ethermint/testutil/config"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
 type BackendTestSuite struct {
 	suite.Suite
-	backend *Backend
-	acc     sdk.AccAddress
-	signer  keyring.Signer
+	backend       *Backend
+	acc           sdk.AccAddress
+	signer        keyring.Signer
+	signerAddress sdk.AccAddress
 }
 
 func TestBackendTestSuite(t *testing.T) {
@@ -66,8 +71,9 @@ func (suite *BackendTestSuite) SetupTest() {
 	priv, err := ethsecp256k1.GenerateKey()
 	suite.signer = tests.NewSigner(priv)
 	suite.Require().NoError(err)
+	suite.signerAddress = sdk.AccAddress(priv.PubKey().Address().Bytes())
 
-	encodingConfig := encoding.MakeTestEncodingConfig(evm.AppModuleBasic{})
+	encodingConfig := config.MakeConfigForTest(nil)
 	clientCtx := client.Context{}.WithChainID(ChainID).
 		WithHeight(1).
 		WithTxConfig(encodingConfig.TxConfig).
@@ -102,12 +108,12 @@ func (suite *BackendTestSuite) buildEthereumTx() (*evmtypes.MsgEthereumTx, []byt
 		nil,
 		nil,
 	)
-
-	// A valid msg should have empty `From`
-	msgEthereumTx.From = ""
+	msgEthereumTx.From = suite.signerAddress
+	err := msgEthereumTx.Sign(ethtypes.LatestSignerForChainID(suite.backend.chainID), suite.signer)
+	suite.Require().NoError(err)
 
 	txBuilder := suite.backend.clientCtx.TxConfig.NewTxBuilder()
-	err := txBuilder.SetMsgs(msgEthereumTx)
+	err = txBuilder.SetMsgs(msgEthereumTx)
 	suite.Require().NoError(err)
 
 	bz, err := suite.backend.clientCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
@@ -176,7 +182,7 @@ func (suite *BackendTestSuite) signAndEncodeEthTx(msgEthereumTx *evmtypes.MsgEth
 	RegisterParamsWithoutHeader(queryClient, 1)
 
 	ethSigner := ethtypes.LatestSigner(suite.backend.ChainConfig())
-	msgEthereumTx.From = from.String()
+	msgEthereumTx.From = from.Bytes()
 	err := msgEthereumTx.Sign(ethSigner, signer)
 	suite.Require().NoError(err)
 

@@ -31,7 +31,6 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // EthAccountVerificationDecorator validates an account balance checks
@@ -88,13 +87,14 @@ func (avd EthAccountVerificationDecorator) AnteHandle(
 		if acct == nil {
 			acc := avd.ak.NewAccountWithAddress(ctx, from)
 			avd.ak.SetAccount(ctx, acc)
-			acct = statedb.NewEmptyAccount()
 		} else if acct.IsContract() {
 			return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType,
 				"the sender is not EOA: address %s, codeHash <%s>", fromAddr, acct.CodeHash)
 		}
 
-		if err := keeper.CheckSenderBalance(sdkmath.NewIntFromBigInt(acct.Balance), txData); err != nil {
+		params := avd.evmKeeper.GetParams(ctx)
+		balance := avd.evmKeeper.GetBalance(ctx, from, params.EvmDenom)
+		if err := keeper.CheckSenderBalance(sdkmath.NewIntFromBigInt(balance), txData); err != nil {
 			return ctx, errorsmod.Wrap(err, "failed to check sender balance")
 		}
 	}
@@ -191,7 +191,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 			return ctx, errorsmod.Wrapf(err, "failed to verify the fees")
 		}
 
-		err = egcd.evmKeeper.DeductTxCostsFromUserBalance(ctx, fees, common.HexToAddress(msgEthTx.From))
+		err = egcd.evmKeeper.DeductTxCostsFromUserBalance(ctx, fees, common.BytesToAddress(msgEthTx.From))
 		if err != nil {
 			return ctx, errorsmod.Wrapf(err, "failed to deduct transaction costs from user balance")
 		}
@@ -260,7 +260,6 @@ func NewCanTransferDecorator(evmKeeper EVMKeeper) CanTransferDecorator {
 func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	params := ctd.evmKeeper.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(ctd.evmKeeper.ChainID())
-	signer := ethtypes.MakeSigner(ethCfg, big.NewInt(ctx.BlockHeight()))
 
 	for _, msg := range tx.GetMsgs() {
 		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
@@ -270,11 +269,11 @@ func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 
 		baseFee := ctd.evmKeeper.GetBaseFee(ctx, ethCfg)
 
-		coreMsg, err := msgEthTx.AsMessage(signer, baseFee)
+		coreMsg, err := msgEthTx.AsMessage(baseFee)
 		if err != nil {
 			return ctx, errorsmod.Wrapf(
 				err,
-				"failed to create an ethereum core.Message from signer %T", signer,
+				"failed to create an ethereum core.Message",
 			)
 		}
 

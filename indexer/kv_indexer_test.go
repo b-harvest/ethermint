@@ -4,21 +4,28 @@ import (
 	"math/big"
 	"testing"
 
-	"cosmossdk.io/log"
-	"cosmossdk.io/simapp/params"
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmtypes "github.com/cometbft/cometbft/types"
-	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/stretchr/testify/require"
+
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	"cosmossdk.io/log"
+	"cosmossdk.io/simapp/params"
+
+	dbm "github.com/cosmos/cosmos-db"
+
+	"github.com/cosmos/cosmos-sdk/client"
+
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	evmenc "github.com/evmos/ethermint/encoding"
 	"github.com/evmos/ethermint/indexer"
 	"github.com/evmos/ethermint/tests"
+	"github.com/evmos/ethermint/testutil/config"
 	"github.com/evmos/ethermint/x/evm"
 	"github.com/evmos/ethermint/x/evm/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestKVIndexer(t *testing.T) {
@@ -32,11 +39,11 @@ func TestKVIndexer(t *testing.T) {
 	tx := types.NewTx(
 		nil, 0, &to, big.NewInt(1000), 21000, nil, nil, nil, nil, nil,
 	)
-	tx.From = from.Hex()
+	tx.From = from.Bytes()
 	require.NoError(t, tx.Sign(ethSigner, signer))
 	txHash := tx.AsTransaction().Hash()
 
-	encodingConfig := MakeEncodingConfig()
+	encodingConfig := config.MakeConfigForTest(nil)
 	clientCtx := client.Context{}.WithTxConfig(encodingConfig.TxConfig).WithCodec(encodingConfig.Codec)
 
 	// build cosmos-sdk wrapper tx

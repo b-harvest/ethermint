@@ -64,23 +64,27 @@ func (suite *KeeperTestSuite) TestCreateAccount() {
 
 func (suite *KeeperTestSuite) TestAddBalance() {
 	testCases := []struct {
-		name   string
-		amount *big.Int
-		isNoOp bool
+		name    string
+		amount  *big.Int
+		isPanic bool
+		isNoOp  bool
 	}{
 		{
 			"positive amount",
 			big.NewInt(100),
 			false,
+			false,
 		},
 		{
 			"zero amount",
 			big.NewInt(0),
+			false,
 			true,
 		},
 		{
 			"negative amount",
 			big.NewInt(-1),
+			true,
 			false, // seems to be consistent with go-ethereum's implementation
 		},
 	}
@@ -89,13 +93,16 @@ func (suite *KeeperTestSuite) TestAddBalance() {
 		suite.Run(tc.name, func() {
 			vmdb := suite.StateDB()
 			prev := vmdb.GetBalance(suite.address)
-			vmdb.AddBalance(suite.address, tc.amount)
-			post := vmdb.GetBalance(suite.address)
-
-			if tc.isNoOp {
-				suite.Require().Equal(prev.Int64(), post.Int64())
+			if tc.isPanic {
+				suite.Require().Panics(func() { vmdb.AddBalance(suite.address, tc.amount) })
 			} else {
-				suite.Require().Equal(new(big.Int).Add(prev, tc.amount).Int64(), post.Int64())
+				vmdb.AddBalance(suite.address, tc.amount)
+				post := vmdb.GetBalance(suite.address)
+				if tc.isNoOp {
+					suite.Require().Equal(prev.Int64(), post.Int64())
+				} else {
+					suite.Require().Equal(new(big.Int).Add(prev, tc.amount).Int64(), post.Int64())
+				}
 			}
 		})
 	}
@@ -106,6 +113,7 @@ func (suite *KeeperTestSuite) TestSubBalance() {
 		name     string
 		amount   *big.Int
 		malleate func(vm.StateDB)
+		isPanic  bool
 		isNoOp   bool
 	}{
 		{
@@ -113,6 +121,7 @@ func (suite *KeeperTestSuite) TestSubBalance() {
 			big.NewInt(100),
 			func(vm.StateDB) {},
 			false,
+			true,
 		},
 		{
 			"positive amount, above zero",
@@ -121,17 +130,20 @@ func (suite *KeeperTestSuite) TestSubBalance() {
 				vmdb.AddBalance(suite.address, big.NewInt(100))
 			},
 			false,
+			false,
 		},
 		{
 			"zero amount",
 			big.NewInt(0),
 			func(vm.StateDB) {},
+			false,
 			true,
 		},
 		{
 			"negative amount",
 			big.NewInt(-1),
 			func(vm.StateDB) {},
+			true,
 			false,
 		},
 	}
@@ -142,13 +154,16 @@ func (suite *KeeperTestSuite) TestSubBalance() {
 			tc.malleate(vmdb)
 
 			prev := vmdb.GetBalance(suite.address)
-			vmdb.SubBalance(suite.address, tc.amount)
-			post := vmdb.GetBalance(suite.address)
-
-			if tc.isNoOp {
-				suite.Require().Equal(prev.Int64(), post.Int64())
+			if tc.isPanic {
+				suite.Require().Panics(func() { vmdb.SubBalance(suite.address, tc.amount) })
 			} else {
-				suite.Require().Equal(new(big.Int).Sub(prev, tc.amount).Int64(), post.Int64())
+				vmdb.SubBalance(suite.address, tc.amount)
+				post := vmdb.GetBalance(suite.address)
+				if tc.isNoOp {
+					suite.Require().Equal(prev.Int64(), post.Int64())
+				} else {
+					suite.Require().Equal(new(big.Int).Sub(prev, tc.amount).Int64(), post.Int64())
+				}
 			}
 		})
 	}
@@ -636,27 +651,27 @@ func (suite *KeeperTestSuite) CreateTestTx(msg *types.MsgEthereumTx, priv crypto
 func (suite *KeeperTestSuite) TestAddLog() {
 	addr, privKey := tests.NewAddrKey()
 	msg := types.NewTx(big.NewInt(1), 0, &suite.address, big.NewInt(1), 100000, big.NewInt(1), nil, nil, []byte("test"), nil)
-	msg.From = addr.Hex()
+	msg.From = addr.Bytes()
 
 	tx := suite.CreateTestTx(msg, privKey)
 	msg, _ = tx.GetMsgs()[0].(*types.MsgEthereumTx)
 	txHash := msg.AsTransaction().Hash()
 
 	msg2 := types.NewTx(big.NewInt(1), 1, &suite.address, big.NewInt(1), 100000, big.NewInt(1), nil, nil, []byte("test"), nil)
-	msg2.From = addr.Hex()
+	msg2.From = addr.Bytes()
 
 	tx2 := suite.CreateTestTx(msg2, privKey)
 	msg2, _ = tx2.GetMsgs()[0].(*types.MsgEthereumTx)
 
 	msg3 := types.NewTx(big.NewInt(1), 0, &suite.address, big.NewInt(1), 100000, nil, big.NewInt(1), big.NewInt(1), []byte("test"), nil)
-	msg3.From = addr.Hex()
+	msg3.From = addr.Bytes()
 
 	tx3 := suite.CreateTestTx(msg3, privKey)
 	msg3, _ = tx3.GetMsgs()[0].(*types.MsgEthereumTx)
 	txHash3 := msg3.AsTransaction().Hash()
 
 	msg4 := types.NewTx(big.NewInt(1), 1, &suite.address, big.NewInt(1), 100000, nil, big.NewInt(1), big.NewInt(1), []byte("test"), nil)
-	msg4.From = addr.Hex()
+	msg4.From = addr.Bytes()
 
 	tx4 := suite.CreateTestTx(msg4, privKey)
 	msg4, _ = tx4.GetMsgs()[0].(*types.MsgEthereumTx)
@@ -899,11 +914,11 @@ func (suite *KeeperTestSuite) TestSetBalance() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 			tc.malleate()
-			err := suite.app.EvmKeeper.SetBalance(suite.ctx, tc.addr, amount)
+			err := suite.app.EvmKeeper.SetBalance(suite.ctx, tc.addr, amount, types.DefaultEVMDenom)
 			if tc.expErr {
 				suite.Require().Error(err)
 			} else {
-				balance := suite.app.EvmKeeper.GetBalance(suite.ctx, tc.addr)
+				balance := suite.app.EvmKeeper.GetEVMDenomBalance(suite.ctx, tc.addr)
 				suite.Require().NoError(err)
 				suite.Require().Equal(amount, balance)
 			}
@@ -945,7 +960,7 @@ func (suite *KeeperTestSuite) TestDeleteAccount() {
 				suite.Require().Error(err)
 			} else {
 				suite.Require().NoError(err)
-				balance := suite.app.EvmKeeper.GetBalance(suite.ctx, tc.addr)
+				balance := suite.app.EvmKeeper.GetEVMDenomBalance(suite.ctx, tc.addr)
 				suite.Require().Equal(new(big.Int), balance)
 			}
 		})

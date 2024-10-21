@@ -44,9 +44,7 @@ var _ types.MsgServer = &Keeper{}
 func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*types.MsgEthereumTxResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	sender := msg.From
 	tx := msg.AsTransaction()
-	txIndex := k.GetTxIndexTransient(ctx)
 
 	labels := []metrics.Label{
 		telemetry.NewLabel("tx_type", fmt.Sprintf("%d", tx.Type())),
@@ -94,8 +92,6 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 		sdk.NewAttribute(sdk.AttributeKeyAmount, tx.Value().String()),
 		// add event for ethereum transaction hash format
 		sdk.NewAttribute(types.AttributeKeyEthereumTxHash, response.Hash),
-		// add event for index of valid ethereum tx
-		sdk.NewAttribute(types.AttributeKeyTxIndex, strconv.FormatUint(txIndex, 10)),
 		// add event for eth tx gas used, we can't get it from cosmos tx result when it contains multiple eth tx msgs.
 		sdk.NewAttribute(types.AttributeKeyTxGasUsed, strconv.FormatUint(response.GasUsed, 10)),
 	}
@@ -107,7 +103,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 	}
 
 	if to := tx.To(); to != nil {
-		attrs = append(attrs, sdk.NewAttribute(types.AttributeKeyRecipient, to.Hex()))
+		attrs = append(attrs, sdk.NewAttribute(types.AttributeKeyRecipient, types.HexAddress(to.Bytes())))
 	}
 
 	if response.Failed() {
@@ -136,8 +132,8 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, sender),
-			sdk.NewAttribute(types.AttributeKeyTxType, fmt.Sprintf("%d", tx.Type())),
+			sdk.NewAttribute(sdk.AttributeKeySender, types.HexAddress(msg.From)),
+			sdk.NewAttribute(types.AttributeKeyTxType, strconv.Itoa(int(tx.Type()))),
 		),
 	})
 

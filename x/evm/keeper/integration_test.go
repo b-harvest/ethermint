@@ -243,7 +243,7 @@ func buildEthTx(
 		data,
 		accesses,
 	)
-	msgEthereumTx.From = from.String()
+	msgEthereumTx.From = from.Bytes()
 	return msgEthereumTx
 }
 
@@ -260,8 +260,6 @@ func prepareEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereu
 	err = msgEthereumTx.Sign(s.ethSigner, tests.NewSigner(priv))
 	s.Require().NoError(err)
 
-	// A valid msg should have empty `From`
-	msgEthereumTx.From = ""
 	err = txBuilder.SetMsgs(msgEthereumTx)
 	s.Require().NoError(err)
 
@@ -283,7 +281,7 @@ func prepareEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereu
 func checkEthTx(priv *ethsecp256k1.PrivKey, msgEthereumTx *evmtypes.MsgEthereumTx) *abci.ResponseCheckTx {
 	bz := prepareEthTx(priv, msgEthereumTx)
 	req := abci.RequestCheckTx{Tx: bz}
-	res, _ := s.app.CheckTx(&req)
+	res, _ := s.app.CheckTxSync(&req)
 	return res
 }
 

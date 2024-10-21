@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -134,6 +135,7 @@ import (
 	"github.com/evmos/ethermint/app/ante"
 	enccodec "github.com/evmos/ethermint/encoding/codec"
 	"github.com/evmos/ethermint/ethereum/eip712"
+	srvconfig "github.com/evmos/ethermint/server/config"
 	srvflags "github.com/evmos/ethermint/server/flags"
 	ethermint "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm"
@@ -193,6 +195,7 @@ type EthermintApp struct {
 	keys    map[string]*storetypes.KVStoreKey
 	tkeys   map[string]*storetypes.TransientStoreKey
 	memKeys map[string]*storetypes.MemoryStoreKey
+	okeys   map[string]*storetypes.ObjectStoreKey
 
 	// keepers
 	AccountKeeper         authkeeper.AccountKeeper
@@ -307,6 +310,7 @@ func NewEthermintApp(
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
+	bApp.SetDisableBlockGasMeter(true)
 
 	keys := storetypes.NewKVStoreKeys(
 		// SDK keys
@@ -326,8 +330,9 @@ func NewEthermintApp(
 	}
 
 	// Add the EVM transient store key
-	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
+	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
+	okeys := storetypes.NewObjectStoreKeys(banktypes.ObjectStoreKey, evmtypes.ObjectStoreKey)
 	app := &EthermintApp{
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
@@ -378,6 +383,7 @@ func NewEthermintApp(
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
+		okeys[banktypes.ObjectStoreKey],
 		app.AccountKeeper,
 		app.BlockedAddrs(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -561,7 +567,7 @@ func NewEthermintApp(
 	feeMarketSs := app.GetSubspace(feemarkettypes.ModuleName)
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
-		runtime.NewKVStoreService(keys[feemarkettypes.StoreKey]), tkeys[feemarkettypes.TransientKey], feeMarketSs,
+		runtime.NewKVStoreService(keys[feemarkettypes.StoreKey]), feeMarketSs,
 	)
 
 	// Set authority to x/gov module account to only expect the module account to update params
@@ -570,7 +576,7 @@ func NewEthermintApp(
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[evmtypes.StoreKey]),
-		tkeys[evmtypes.TransientKey],
+		okeys[evmtypes.ObjectStoreKey],
 		authtypes.NewModuleAddress(govtypes.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,
@@ -785,6 +791,7 @@ func NewEthermintApp(
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
+	app.MountObjectStores(okeys)
 
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
@@ -829,6 +836,19 @@ func NewEthermintApp(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
+
+	executor := cast.ToString(appOpts.Get(srvflags.EVMBlockExecutor))
+	switch executor {
+	case srvconfig.BlockExecutorBlockSTM:
+		sdk.SetAddrCacheEnabled(false)
+		workers := cast.ToInt(appOpts.Get(srvflags.EVMBlockSTMWorkers))
+		preEstimate := cast.ToBool(appOpts.Get(srvflags.EVMBlockSTMPreEstimate))
+		app.SetTxExecutor(STMTxExecutor(app.GetStoreKeys(), workers, preEstimate, app.EvmKeeper, txConfig.TxDecoder()))
+	case "", srvconfig.BlockExecutorSequential:
+		app.SetTxExecutor(DefaultTxExecutor)
+	default:
+		panic(fmt.Errorf("unknown EVM block executor: %s", executor))
+	}
 
 	return app
 }
@@ -982,16 +1002,6 @@ func (app *EthermintApp) GetKey(storeKey string) *storetypes.KVStoreKey {
 	return app.keys[storeKey]
 }
 
-// GetStoreKeys returns all the stored store keys.
-func (app *EthermintApp) GetStoreKeys() []storetypes.StoreKey {
-	keys := make([]storetypes.StoreKey, len(app.keys))
-	for _, key := range app.keys {
-		keys = append(keys, key)
-	}
-
-	return keys
-}
-
 // GetTKey returns the TransientStoreKey for the provided store key.
 //
 // NOTE: This is solely to be used for testing purposes.
@@ -1004,6 +1014,25 @@ func (app *EthermintApp) GetTKey(storeKey string) *storetypes.TransientStoreKey 
 // NOTE: This is solely used for testing purposes.
 func (app *EthermintApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 	return app.memKeys[storeKey]
+}
+
+// GetStoreKeys returns all the stored store keys.
+func (app *EthermintApp) GetStoreKeys() []storetypes.StoreKey {
+	keys := make([]storetypes.StoreKey, 0, len(app.keys))
+	for _, key := range app.keys {
+		keys = append(keys, key)
+	}
+	for _, key := range app.tkeys {
+		keys = append(keys, key)
+	}
+	for _, key := range app.memKeys {
+		keys = append(keys, key)
+	}
+	for _, key := range app.okeys {
+		keys = append(keys, key)
+	}
+	sort.SliceStable(keys, func(i, j int) bool { return keys[i].Name() < keys[j].Name() })
+	return keys
 }
 
 // GetSubspace returns a param subspace for a given module name.
