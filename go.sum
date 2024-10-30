@@ -267,8 +267,8 @@ github.com/aws/aws-sdk-go v1.44.224/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
 github.com/b-harvest/cosmos-sdk v0.0.0-20241030055507-b84851e4379f h1:Y/kLwnoGpQV6S++JCEi91d/yvFNgRsRy2ClmWaDUR34=
 github.com/b-harvest/cosmos-sdk v0.0.0-20241030055507-b84851e4379f/go.mod h1:swzHMI2C9wU0c5WPyPS/ihryqQmvHukx0/RWS6u8WAY=
-github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030054415-ad69ee001cc8 h1:mvaoU7Js0SeE3vjx1qWbvfPf0F8MjCzBYENscUxppQI=
-github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030054415-ad69ee001cc8/go.mod h1:oZfW/4Fc/zYqu3JmQcQdUJ3fqu5vnYTn3LZFFy8P8ng=
+github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030161953-9e8e56b00f17 h1:JHnbr52bO0MlDMgdZS/J53d1VPAUYllWscCfzXn1a/I=
+github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030161953-9e8e56b00f17/go.mod h1:oZfW/4Fc/zYqu3JmQcQdUJ3fqu5vnYTn3LZFFy8P8ng=
 github.com/b-harvest/cosmos-sdk/x/tx v0.0.0-20241030095706-9a094eafbb87 h1:VVrRHM7NoGQ1/lGmM/c/rv0adf1uFayPu7VbFW0HcuY=
 github.com/b-harvest/cosmos-sdk/x/tx v0.0.0-20241030095706-9a094eafbb87/go.mod h1:V6DImnwJMTq5qFjeGWpXNiT/fjgE4HtmclRmTqRVM3w=
 github.com/b-harvest/go-ethereum v0.0.0-20241030045232-36fbb2cddc00 h1:7s2WNRLlFqLkgeOv7QI78MqpOapk5GVQTN2QgOOPr3s=

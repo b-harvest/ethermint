@@ -244,7 +244,7 @@ require (
 )
 
 replace (
-	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030054415-ad69ee001cc8
+	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030161953-9e8e56b00f17
 	cosmossdk.io/x/tx => github.com/b-harvest/cosmos-sdk/x/tx v0.0.0-20241030095706-9a094eafbb87
 	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20241030055507-b84851e4379f
 	github.com/ethereum/go-ethereum => github.com/b-harvest/go-ethereum v0.0.0-20241030045232-36fbb2cddc00
