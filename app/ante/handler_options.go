@@ -76,6 +76,10 @@ func (options HandlerOptions) validate() error {
 	return nil
 }
 
+func NewEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
+	return newEthAnteHandler(options)
+}
+
 func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return func(ctx sdk.Context, tx sdk.Tx, simulate bool) (sdk.Context, error) {
 		blockCfg, err := options.EvmKeeper.EVMBlockConfig(ctx, options.EvmKeeper.ChainID())
