@@ -244,17 +244,16 @@ require (
 )
 
 replace (
-	// release/v0.50.x
 	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030054415-ad69ee001cc8
 	cosmossdk.io/x/tx => github.com/b-harvest/cosmos-sdk/x/tx v0.0.0-20241030095706-9a094eafbb87
 	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20241030055507-b84851e4379f
+	github.com/ethereum/go-ethereum => github.com/b-harvest/go-ethereum v0.0.0-20241030045232-36fbb2cddc00
 )
 
 replace (
 	// use cosmos keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	// release/v1.11.x
-	github.com/ethereum/go-ethereum => github.com/crypto-org-chain/go-ethereum v1.10.20-0.20240926023215-d2275b4afb9a
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
