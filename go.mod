@@ -2,7 +2,7 @@ module github.com/evmos/ethermint
 
 go 1.22.2
 
-toolchain go1.22.3
+// toolchain go1.22.3
 
 require (
 	cosmossdk.io/api v0.7.6
@@ -245,9 +245,9 @@ require (
 
 replace (
 	// release/v0.50.x
-	cosmossdk.io/store => github.com/crypto-org-chain/cosmos-sdk/store v0.0.0-20240930015419-f4ea363b3fdf
-	cosmossdk.io/x/tx => github.com/crypto-org-chain/cosmos-sdk/x/tx v0.0.0-20240930015419-f4ea363b3fdf
-	github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.50.6-0.20240930015419-f4ea363b3fdf
+	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030054415-ad69ee001cc8
+	cosmossdk.io/x/tx => github.com/b-harvest/cosmos-sdk/x/tx v0.0.0-20241030095706-9a094eafbb87
+	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20241030055507-b84851e4379f
 )
 
 replace (
