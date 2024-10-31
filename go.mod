@@ -2,7 +2,7 @@ module github.com/evmos/ethermint
 
 go 1.22.2
 
-// toolchain go1.22.3
+toolchain go1.22.3
 
 require (
 	cosmossdk.io/api v0.7.6
