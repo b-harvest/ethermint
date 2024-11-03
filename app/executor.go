@@ -24,6 +24,12 @@ import (
 
 const MinimalParallelPreEstimate = 16
 
+var (
+	TESTMODE = false
+
+	TxExecuteCounter []atomic.Int32
+)
+
 func DefaultTxExecutor(_ context.Context,
 	txs [][]byte,
 	ms storetypes.MultiStore,
@@ -86,6 +92,10 @@ func STMTxExecutor(
 			memTxs, estimates = preEstimates(txs, workers, authStore, bankStore, evmDenom, txDecoder)
 		}
 
+		if TESTMODE {
+			TxExecuteCounter = make([]atomic.Int32, blockSize)
+		}
+
 		if err := blockstm.ExecuteBlockWithEstimates(
 			ctx,
 			blockSize,
@@ -95,6 +105,10 @@ func STMTxExecutor(
 			estimates,
 			func(txn blockstm.TxnIndex, ms blockstm.MultiStore) {
 				var cache map[string]any
+
+				if TESTMODE {
+					TxExecuteCounter[txn].Add(1)
+				}
 
 				// only one of the concurrent incarnations gets the cache if there are any, otherwise execute without
 				// cache, concurrent incarnations should be rare.
