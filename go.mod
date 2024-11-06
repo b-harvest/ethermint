@@ -247,7 +247,7 @@ replace (
 	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20241030161953-9e8e56b00f17
 	cosmossdk.io/x/tx => github.com/b-harvest/cosmos-sdk/x/tx v0.0.0-20241103053257-79f3f75686a0
 	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20241030055507-b84851e4379f
-	github.com/ethereum/go-ethereum => github.com/b-harvest/go-ethereum v0.0.0-20241104093914-e1cd35fc61f1
+	github.com/ethereum/go-ethereum => github.com/b-harvest/go-ethereum v0.0.0-20241106045451-23c79ab53226
 )
 
 replace (
