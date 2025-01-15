@@ -222,7 +222,7 @@ func (suite *BaseTestSuiteWithAccount) PrepareEthTx(msgEthereumTx *types.MsgEthe
 }
 
 func (suite *BaseTestSuiteWithAccount) CheckTx(tx []byte) abci.ResponseCheckTx {
-	res, err := suite.App.CheckTx(&abci.RequestCheckTx{Tx: tx})
+	res, err := suite.App.CheckTxSync(&abci.RequestCheckTx{Tx: tx})
 	if err != nil {
 		panic(err)
 	}
